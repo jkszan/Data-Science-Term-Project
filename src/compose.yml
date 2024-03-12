@@ -1,0 +1,13 @@
+services:
+  datamart:
+    image: 'postgres:latest'
+    ports:
+      - "5436:5432"
+
+    environment:
+      POSTGRES_USER: ${DBUSER} # The PostgreSQL user (useful to connect to the database)
+      POSTGRES_PASSWORD: ${DBPASS} # The PostgreSQL password (useful to connect to the database)
+      POSTGRES_DB: ${DATABASE} # The PostgreSQL default database (automatically created at first launch)
+
+    volumes:
+      - ./Datamart/:/docker-entrypoint-initdb.d/
