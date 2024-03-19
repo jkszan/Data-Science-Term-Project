@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS StationLookupTable(
 CREATE TABLE IF NOT EXISTS DailyWeather(
     StationID int REFERENCES StationLookupTable(StationID) NOT NULL,
     WeatherDate date NOT NULL,
-    StationName VARCHAR(20),
+    StationName VARCHAR(50),
     StationLatitude double precision NOT NULL,
     StationLongitude double precision NOT NULL,
     StationProvinceShort province_short,
@@ -45,9 +45,7 @@ CREATE TABLE IF NOT EXISTS BurnIncident(
 -- Note, changed Date in "Burnincident" and "Dailyweather"
 
 CREATE TABLE IF NOT EXISTS YearlyLandCost(
-    ProvinceID int UNIQUE GENERATED ALWAYS AS IDENTITY NOT NULL, -- Province ID is stupid and we should change to using province short instead
-    CostYear int NOT NULL,
-    CostProvinceShort province_short NOT NULL,
+    Provrow['SIZE'], tProvinceShort province_short NOT NULL,
     DollarPerAcre double precision,
     DollarPerHectare double precision NOT NULL,
     InflationScalar double precision NOT NULL,

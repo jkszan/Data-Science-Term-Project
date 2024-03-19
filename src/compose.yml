@@ -2,7 +2,7 @@ services:
   datamart:
     image: 'postgres:latest'
     ports:
-      - "5436:5432"
+      - "5432:5432"
 
     environment:
       POSTGRES_USER: ${DBUSER} # The PostgreSQL user (useful to connect to the database)
