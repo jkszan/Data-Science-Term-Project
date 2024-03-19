@@ -1,4 +1,4 @@
--- Creating an enum to constrain the possible province shorts in our many tabless
+-- Creating an enum to constrain the possible province shorts in our many tables
 CREATE TYPE province_short AS ENUM(
     'NL',
     'PE',
@@ -15,8 +15,13 @@ CREATE TYPE province_short AS ENUM(
     'NU'
 );
 
+CREATE TABLE IF NOT EXISTS StationLookupTable(
+    StationID int PRIMARY KEY,
+    StationName VARCHAR(20)
+);
+
 CREATE TABLE IF NOT EXISTS DailyWeather(
-    StationID int UNIQUE GENERATED ALWAYS AS IDENTITY NOT NULL,
+    StationID int REFERENCES StationLookupTable(StationID) NOT NULL,
     WeatherDate date NOT NULL,
     StationName VARCHAR(20),
     StationLatitude double precision NOT NULL,
@@ -30,7 +35,7 @@ CREATE TABLE IF NOT EXISTS DailyWeather(
 
 CREATE TABLE IF NOT EXISTS BurnIncident(
     BurnIncidentID int UNIQUE GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    ClosestStationID int REFERENCES DailyWeather(StationID) NOT NULL,
+    ClosestStationID int REFERENCES StationLookupTable(StationID) NOT NULL,
     FireLatitude double precision,
     FireLongitude double precision,
     FireProvinceShort province_short NOT NULl,
@@ -50,7 +55,7 @@ CREATE TABLE IF NOT EXISTS YearlyLandCost(
 );
 
 CREATE TABLE IF NOT EXISTS DailyBurnCost(
-    StationID int REFERENCES DailyWeather(StationID) NOT NULL,
+    StationID int REFERENCES StationLookupTable(StationID),
     BurnCostDate date NOT NULL,
     ProvinceID int REFERENCES YearlyLandCost(ProvinceID) NOT NULL,
     BurnIncidentID int REFERENCES BurnIncident(BurnIncidentID) NOT NULL,
