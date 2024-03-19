@@ -17,7 +17,7 @@ CREATE TYPE province_short AS ENUM(
 
 CREATE TABLE IF NOT EXISTS StationLookupTable(
     StationID int PRIMARY KEY,
-    StationName VARCHAR(20)
+    StationName VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS DailyWeather(
