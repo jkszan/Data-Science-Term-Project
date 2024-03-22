@@ -35,7 +35,7 @@ def loadStations(stations):
     for _, station in stations.iterrows():
         cur.execute(
             "INSERT INTO StationLookupTable(StationID, StationName) VALUES" +
-            f"({station['Station ID']}, '{station['Name']}') ON CONFLICT DO NOTHING;"
+            f"({station['Station ID']}, '{station['NameFormatted']}') ON CONFLICT DO NOTHING;"
         )
 
     conn.commit()
@@ -66,14 +66,16 @@ def getWeatherInfo(stationNameIndex, stationID, date):
     stationName = stationNameIndex[stationID]
     url = f"https://api.weather.gc.ca/collections/climate-daily/items?f=csv&lang=en-CA&limit=10&skipGeometry=false&offset=0&LOCAL_DATE={date}&STATION_NAME={stationName}&properties=STATION_NAME,MEAN_TEMPERATURE,SPEED_MAX_GUST,MAX_REL_HUMIDITY,PROVINCE_CODE"
     #url = f"https://api.weather.gc.ca/collections/climate-daily/items?datetime={date}%2000:00:00/{date}%2000:00:00&STN_ID={stationID}&f=csv&limit=10&startindex=0"
+    print(stationName, date)
     retries = 3
     while retries > 0:
         r = requests.get(url)
 
         with closing(requests.get(url, stream=True)) as r:
-            r.raise_for_status()
-            content = r.content
             try:
+                r.raise_for_status()
+                content = r.content
+
                 weatherOnDay = pd.read_csv(io.StringIO(content.decode("utf-8")), low_memory=False).iloc[0]
 
                 weatherRow = {
@@ -86,12 +88,14 @@ def getWeatherInfo(stationNameIndex, stationID, date):
                     "ProvinceShort" : weatherOnDay["PROVINCE_CODE"]
                 }
 
-                weatherData.append(weatherRow)
-                return weatherData, True
+                return weatherRow, True
             except pd.errors.EmptyDataError:
                 return (stationID, date), False
+            except requests.exceptions.HTTPError:
+                retries -= 1
             except Exception:
                 retries -= 1
+
     return (stationID, date), False
 
 
@@ -120,8 +124,12 @@ def loadRequiredWeather(stationLatLongIndex, dailyWeather):
 
     for _, weather in dailyWeather.iterrows():
         latitude, longitude = stationLatLongIndex[weather['StationID']]
+        if weather['MaxGust'] == 'nan':
+            weather['MaxGust'] = None
+        if weather['MaxRelHumidity'] == 'nan':
+            weather['MaxRelHumidity'] = None
         cur.execute(
-            "INSERT INTO YearlyLandCost(StationID, WeatherDate, StationName, StationLatitude, StationLongitude, StationProvinceShort, AverageTemperature, AverageWindspeed, AverageHumidity) VALUES" +
+            "INSERT INTO DailyWeather(StationID, WeatherDate, StationName, StationLatitude, StationLongitude, StationProvinceShort, AverageTemperature, AverageWindspeed, AverageHumidity) VALUES" +
             f"({weather['StationID']}, '{weather['Date']}', '{weather['StationName']}', {latitude}, {longitude}, '{weather['ProvinceShort']}', {weather['AverageTemp']}, {weather['MaxGust']}, {weather['MaxRelHumidity']}) ON CONFLICT DO NOTHING;"
         )
 
@@ -187,25 +195,25 @@ stationNameIndex = {}
 for _, station in stations.iterrows():
     stationNameIndex[station["Station ID"]] = station["Name"]
 
+stations["NameFormatted"] = stations["Name"].str.replace("'", "")
+loadStations(stations)
+
 burnIncidents = pd.read_csv("../firedata_station.csv")
 requiredWeather = loadBurnIncidents(burnIncidents)
 
-weatherData, failed = requestRequiredWeather(stationNameIndex, requiredWeather)
-weatherData = requestRequiredWeather(requiredWeather)
-weatherDF = pd.DataFrame(weatherData)
-weatherDF.to_csv("./relevantWeatherData.csv")
+#weatherData, failed = requestRequiredWeather(stationNameIndex, requiredWeather)
+#weatherDF = pd.DataFrame(weatherData)
+#weatherDF.to_csv("./relevantWeatherData.csv")
+weatherDF = pd.read_csv("../relevantWeatherData.csv")
 
-print("FAILED RETRIEVALS")
-print(failed)
-
-stations["Name"] = stations["Name"].str.replace("'", "")
-#loadStations(stations)
+#print("FAILED RETRIEVALS")
+#print(failed)
 
 stationLatLongIndex = {}
 for _, station in stations.iterrows():
     stationLatLongIndex[station["Station ID"]] = (station["Latitude"], station["Longitude"])
 
-loadRequiredWeather(stationLatLongIndex, weatherData)
+loadRequiredWeather(stationLatLongIndex, weatherDF)
 
 yearlyLandCosts = pd.read_csv("../YearlyLandCost.csv")
-generateFactTable(burnIncidents, weatherData, yearlyLandCosts)
+#generateFactTable(burnIncidents, weatherDF, yearlyLandCosts)
