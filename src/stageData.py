@@ -61,52 +61,58 @@ def loadBurnIncidents(burnIncidents):
 import requests
 import io
 from contextlib import closing
+from concurrent.futures import ProcessPoolExecutor, as_completed
+def getWeatherInfo(stationNameIndex, stationID, date):
+    stationName = stationNameIndex[stationID]
+    url = f"https://api.weather.gc.ca/collections/climate-daily/items?f=csv&lang=en-CA&limit=10&skipGeometry=false&offset=0&LOCAL_DATE={date}&STATION_NAME={stationName}&properties=STATION_NAME,MEAN_TEMPERATURE,SPEED_MAX_GUST,MAX_REL_HUMIDITY,PROVINCE_CODE"
+    #url = f"https://api.weather.gc.ca/collections/climate-daily/items?datetime={date}%2000:00:00/{date}%2000:00:00&STN_ID={stationID}&f=csv&limit=10&startindex=0"
+    retries = 3
+    while retries > 0:
+        r = requests.get(url)
+
+        with closing(requests.get(url, stream=True)) as r:
+            r.raise_for_status()
+            content = r.content
+            try:
+                weatherOnDay = pd.read_csv(io.StringIO(content.decode("utf-8")), low_memory=False).iloc[0]
+
+                weatherRow = {
+                    "StationID" : stationID,
+                    "Date" : date,
+                    "StationName" : weatherOnDay["STATION_NAME"],
+                    "AverageTemp" : weatherOnDay["MEAN_TEMPERATURE"],
+                    "MaxGust" : weatherOnDay["SPEED_MAX_GUST"],
+                    "MaxRelHumidity" : weatherOnDay["MAX_REL_HUMIDITY"],
+                    "ProvinceShort" : weatherOnDay["PROVINCE_CODE"]
+                }
+
+                weatherData.append(weatherRow)
+                return weatherData, True
+            except pd.errors.EmptyDataError:
+                return (stationID, date), False
+            except Exception:
+                retries -= 1
+    return (stationID, date), False
+
 
 def requestRequiredWeather(stationNameIndex, requiredWeather):
     # From entries of burnIncidents, compile a set of days of weather we need from each weather station
 
     weatherData = []
     failedRetrievals = []
+    
+    with ProcessPoolExecutor(max_workers=40) as e:
+        futures = [e.submit(getWeatherInfo, stationNameIndex, stationID, date) for stationID, date in list(requiredWeather)]
 
-    for stationID, date in list(requiredWeather):
-        stationName = stationNameIndex[stationID]
-        url = f"https://api.weather.gc.ca/collections/climate-daily/items?f=csv&lang=en-CA&limit=10&skipGeometry=false&offset=0&LOCAL_DATE={date}&STATION_NAME={stationName}&properties=STATION_NAME,MEAN_TEMPERATURE,SPEED_MAX_GUST,MAX_REL_HUMIDITY,PROVINCE_CODE"
-        #url = f"https://api.weather.gc.ca/collections/climate-daily/items?datetime={date}%2000:00:00/{date}%2000:00:00&STN_ID={stationID}&f=csv&limit=10&startindex=0"
-        print(url)
-        done = False
-        retries = 3
-        while not done:
-            r = requests.get(url)
+        for future in as_completed(futures):
+            returnedVal, successful = future.result()
 
-            with closing(requests.get(url, stream=True)) as r:
-                r.raise_for_status()
-                content = r.content
-                try:
-                    weatherOnDay = pd.read_csv(io.StringIO(content.decode("utf-8")), low_memory=False).iloc[0]
-                    print(weatherOnDay)
+            if successful:
+                weatherData.append(returnedVal)
+            else:
+                failedRetrievals.append(returnedVal)
+            print(len(futures), end='\r')
 
-                    weatherRow = {
-                        "StationID" : stationID,
-                        "Date" : date,
-                        "StationName" : weatherOnDay["STATION_NAME"],
-                        "AverageTemp" : weatherOnDay["MEAN_TEMPERATURE"],
-                        "MaxGust" : weatherOnDay["SPEED_MAX_GUST"],
-                        "MaxRelHumidity" : weatherOnDay["MAX_REL_HUMIDITY"],
-                        "ProvinceShort" : weatherOnDay["PROVINCE_CODE"]
-                    }
-
-                    weatherData.append(weatherRow)
-                    done = True
-                except pd.errors.EmptyDataError:
-                    failedRetrievals.append((stationID, date))
-                    done = True
-                except Exception:
-                    retries -= 1
-                    if retries == 0:
-                        done = True
-
-    print(weatherData)
-    print(len(weatherData))
     return weatherData, failedRetrievals
 
 def loadRequiredWeather(stationLatLongIndex, dailyWeather):
@@ -167,6 +173,7 @@ def generateFactTable(burnIncidents, weatherData, yearlyCostData):
             "INSERT INTO DailyBurnCost(StationID, BurnCostDate, ProvinceID, BurnIncidentID, FireProvinceShort, AverageTemperature, AverageHumidity, HectaresBurnt, Cost) VALUES" +
             f"({stationID}, '{fireDate}', '{provinceID}', {burnIncidentID}, {fireProvinceShort}, {averageTemp}, {averageHumid}, {hectaresBurnt}, {cost}) ON CONFLICT DO NOTHING;"
         )
+        # TODO: Deal with the fact that some weather is not present
 
     conn.commit()
 
@@ -185,7 +192,8 @@ requiredWeather = loadBurnIncidents(burnIncidents)
 
 weatherData, failed = requestRequiredWeather(stationNameIndex, requiredWeather)
 weatherData = requestRequiredWeather(requiredWeather)
-weatherData.to_csv("./relevantWeatherData.csv")
+weatherDF = pd.DataFrame(weatherData)
+weatherDF.to_csv("./relevantWeatherData.csv")
 
 print("FAILED RETRIEVALS")
 print(failed)
