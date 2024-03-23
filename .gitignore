@@ -30,3 +30,7 @@ dist/
 env/
 
 # data/
+
+# Rust
+target/
+Cargo.lock
