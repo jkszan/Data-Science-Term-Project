@@ -20,10 +20,10 @@ impl instant_distance::Point for Point {
 }
 
 const UNIXSTARTDAY: i32 = 719_163;
-const WEATHER_DIRECTORY: &str = "../../../weatherdata";
+const WEATHER_DIRECTORY: &str = "../../../data/weather";
 
 fn get_closest_ranking(hotspot_data: &mut DataFrame) -> Result<Vec<Vec<String>>, String> {
-    let weather_stations = CsvReader::from_path("../../../data/station_inventory.csv.csv")
+    let weather_stations = CsvReader::from_path("../../../data/station_inventory.csv")
         .unwrap()
         .infer_schema(None)
         .has_header(true)
@@ -148,7 +148,7 @@ fn main() -> Result<(), String> {
     let earliest_date = NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + fire_dates.min().unwrap()).unwrap();
     let latest_date = NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + fire_dates.max().unwrap()).unwrap();
 
-    let mut closest_stations = Vec::with_capacity(fire_dates.len());
+    let mut closest_stations: Vec<String> = Vec::with_capacity(fire_dates.len());
     
     let weather_dir = Path::new(WEATHER_DIRECTORY);
 
@@ -163,7 +163,7 @@ fn main() -> Result<(), String> {
                 let url = format!("
                             https://api.weather.gc.ca/collections/climate-daily/items?f=csv&lang=en-CA&skipGeometry=false\
                                   &offset=0&datetime={}%2000:00:00/{}%2000:00:00&CLIMATE_IDENTIFIER={}&\
-                                  properties=LOCAL_DATE,STATION_NAME,MEAN_TEMPERATURE,SPEED_MAX_GUST,MAX_REL_HUMIDITY,PROVINCE_CODE",
+                                  properties=LOCAL_DATE,STATION_NAME,MEAN_TEMPERATURE,CLIMATE_IDENTIFIER,SPEED_MAX_GUST,MAX_REL_HUMIDITY,PROVINCE_CODE",
                                   earliest_date.to_string(),latest_date.to_string(),station);
                 let request = client.get(url).build().expect("FAILED TO BUILD WEATHER URL REQUEST");
                 if let Ok(response) = client.execute(request){
@@ -179,11 +179,10 @@ fn main() -> Result<(), String> {
                 .has_header(true)
                 .truncate_ragged_lines(true)
                 .finish(){
-
                     let date = NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + dateint.unwrap()).unwrap();
                     if let Ok(good_measurements) = weather_station.lazy().filter(col("MEAN_TEMPERATURE").is_not_null()).filter(col("LOCAL_DATE").eq(lit(date))).collect(){
                         if !good_measurements.is_empty(){
-                            closest_stations.push(station);
+                            closest_stations.push(station.to_string());
                             break;
                         }
                     }
@@ -191,17 +190,17 @@ fn main() -> Result<(), String> {
             
         }
     }
-
-    //let hotspot_data = hotspot_data
-    //    .with_column(Series::new("ClosestStationID",closestpoints))
-    //    .unwrap();
-    //println!("{}", hotspot_data);
-    //let path = "../../../firedata_station.csv";
-    //if let Ok(new_firestations_file) = File::create(path) {
-    //    let writer = CsvWriter::new(new_firestations_file);
-    //    writer.include_header(true).finish(hotspot_data).unwrap();
-    //    println!("firedata_station mapping written to {}", path);
-    //}
+    // let mut hotspot_data = hotspot_data.slice(0, i);
+    let hotspot_data = hotspot_data
+       .with_column(Series::new("ClosestStationID", closest_stations))
+       .unwrap();
+    println!("{}", hotspot_data);
+    let path = "../../../firedata_station.csv";
+    if let Ok(new_firestations_file) = File::create(path) {
+       let writer = CsvWriter::new(new_firestations_file);
+       writer.include_header(true).finish(hotspot_data).unwrap();
+       println!("firedata_station mapping written to {}", path);
+    }
 
     Ok(())
 }
