@@ -2,7 +2,7 @@ use chrono::{Datelike, NaiveDate};
 use indicatif::ProgressIterator;
 use instant_distance::{Builder, Search};
 use polars::io::csv::CsvReader;
-use polars::lazy::dsl::col;
+use polars::lazy::dsl::{col, lit};
 use polars::prelude::*;
 use reqwest::blocking::Client;
 use std::fs::File;
@@ -139,6 +139,12 @@ fn main() -> Result<(), String> {
         .has_header(true)
         .low_memory(true)
         .finish()
+        .unwrap()
+        .lazy()
+        .filter(col("FireLatitude").is_not_null())
+        .filter(col("FireLongitude").is_not_null())
+        .filter(col("Date").gt(lit(NaiveDate::from_ymd_opt(2022, 10, 1).unwrap())))
+        .collect()
         .unwrap();
 
     let closest_ranking = get_closest_ranking(&mut hotspot_data)?;
@@ -180,7 +186,13 @@ fn main() -> Result<(), String> {
                 .truncate_ragged_lines(true)
                 .finish(){
                     let date = NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + dateint.unwrap()).unwrap();
-                    if let Ok(good_measurements) = weather_station.lazy().filter(col("MEAN_TEMPERATURE").is_not_null()).filter(col("LOCAL_DATE").eq(lit(date))).collect(){
+                    let str_date = date.to_string();
+                    let measurements = weather_station
+                        .lazy()
+                        .filter(col("MEAN_TEMPERATURE").is_not_null())
+                        .filter(col("LOCAL_DATE").eq(lit(str_date)))
+                        .collect();
+                    if let Ok(good_measurements) = measurements {
                         if !good_measurements.is_empty(){
                             closest_stations.push(station.to_string());
                             break;
@@ -190,12 +202,12 @@ fn main() -> Result<(), String> {
             
         }
     }
-    // let mut hotspot_data = hotspot_data.slice(0, i);
+
     let hotspot_data = hotspot_data
        .with_column(Series::new("ClosestStationID", closest_stations))
        .unwrap();
     println!("{}", hotspot_data);
-    let path = "../../../firedata_station.csv";
+    let path = "../../../data/firedata_station.csv";
     if let Ok(new_firestations_file) = File::create(path) {
        let writer = CsvWriter::new(new_firestations_file);
        writer.include_header(true).finish(hotspot_data).unwrap();
