@@ -23,7 +23,7 @@ const UNIXSTARTDAY: i32 = 719_163;
 const WEATHER_DIRECTORY: &str = "../../../weatherdata";
 
 fn get_closest_ranking(hotspot_data: &mut DataFrame) -> Result<Vec<Vec<String>>, String> {
-    let weather_stations = CsvReader::from_path("../../../Station Inventory EN.csv")
+    let weather_stations = CsvReader::from_path("../../../data/station_inventory.csv.csv")
         .unwrap()
         .infer_schema(None)
         .has_header(true)
@@ -132,7 +132,7 @@ fn get_closest_ranking(hotspot_data: &mut DataFrame) -> Result<Vec<Vec<String>>,
 fn main() -> Result<(), String> {
     let client = Client::new();
 
-    let mut hotspot_data = CsvReader::from_path("../../../firedata_no_station.csv")
+    let mut hotspot_data = CsvReader::from_path("../../../data/firedata_no_station.csv")
         .unwrap()
         .infer_schema(None)
         .with_try_parse_dates(true)
