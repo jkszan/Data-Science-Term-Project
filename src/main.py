@@ -1,7 +1,9 @@
+import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import pandas as pd
 from tqdm import tqdm
+import shutil
 
 
 """
@@ -15,11 +17,18 @@ of the station lookup table to replace Climate ID as the link.
 We connect the hotspots and stations using the rust 
 """
 
-WEATHER_OUTPUT_PATH: Path = Path("../data/weather.csv")
-WEATHER_DIR: Path = Path("../data/weather")
+DAILY_WEATHER_OUTPUT_PATH: Path = Path("../data/weather.csv")
+WEATHER_DIR_IN: Path = Path("../data/weather")
+WEATHER_DIR_STATION_IDS: Path = Path("../data/weather_station_ids")
 HOTSPOT_FILE: Path = Path("../data/firedata_station.csv")
 HOTSPOT_FILE_WITH_CLIMATE_ID: Path = Path("../data/firedata_station_with_climate_id.csv")
-
+STATION_INVENTORY_PATH: Path = Path("../data/station_inventory.csv")
+STATION_LOOKUP_PATH: Path = Path("../data/station_lookup.csv")
+DATAMART_STATION_LOOKUP_PATH: Path = Path("./Datamart/station_lookup_table.csv")
+DATAMART_DAILY_WEATHER_PATH: Path = Path("./Datamart/daily_weather_table.csv")
+DATAMART_HOTSPOT_PATH: Path = Path("./Datamart/hotspot_table.csv")
+LAND_COST_FILE: Path = Path("../data/land_cost.csv")
+DATAMART_LAND_COST_TABLE_PATH: Path = Path("./Datamart/land_cost_table.csv")
 
 def create_station_lookup() -> pd.DataFrame:
     columns = ["Climate ID", "Name", "Latitude", "Longitude", "Province"]
@@ -51,17 +60,19 @@ def create_station_lookup() -> pd.DataFrame:
 
     # Add index column "Station ID"
     df["Station ID"] = range(len(df))
+    
+    df.to_csv(STATION_LOOKUP_PATH, index=False)
 
     return df
 
 
-def discover_weather_files() -> List[Path]:
+def discover_files(path: Path) -> List[Path]:
     # Find the list of weather files in the data directory
-    files = [file for file in WEATHER_DIR.iterdir() if file.suffix == ".csv" and file.stat().st_size > 0]
+    files = [file for file in path.iterdir() if file.suffix == ".csv" and file.stat().st_size > 0]
     return files
 
 
-def find_station_id(station_lookup: pd.DataFrame, climate_id: str) -> int:
+def find_station_id(station_lookup: pd.DataFrame, climate_id: str) -> Optional[int]:
     assert "Climate ID" in station_lookup.columns, "Climate ID column not found in station lookup table"
     assert type(climate_id) == str, "Climate ID must be a string"
 
@@ -100,6 +111,7 @@ def match_climate_ids(station_lookup: pd.DataFrame, weather_files: List[Path]) -
         df["Station ID"] = df["Climate ID"].apply(lambda x: find_station_id(station_lookup, str(x)))
 
         # Save the updated dataframe back to the file
+        file = WEATHER_DIR_STATION_IDS / file.name
         df.to_csv(file, index=False)
 
 
@@ -141,21 +153,92 @@ def concatenate_weather_files(weather_files: List[Path]) -> None:
     df = pd.concat(dfs)
 
     # Save the concatenated dataframe
-    df.to_csv(WEATHER_OUTPUT_PATH, index=False)
+    df.to_csv(DAILY_WEATHER_OUTPUT_PATH, index=False)
     
     
-def generate_daily_weather_sql() -> None:
-    pass
+def copy_inventory_to_datamart() -> None:
+    df = pd.read_csv(STATION_LOOKUP_PATH)
+    df = df.drop(columns=["Climate ID"])
+    
+    columns = {
+        "Name": "StationName",
+        "Latitude": "StationLatitude",
+        "Longitude": "StationLongitude",
+        "Province": "StationProvinceShort",
+        "Station ID": "StationID",
+    }
+    df = df.rename(columns=columns)
+    df.dropna(inplace=True)
+    
+    df.to_csv(DATAMART_STATION_LOOKUP_PATH, index=False)
+    print("Inventory copied to Datamart")
+
+
+def copy_daily_weather_to_datamart() -> None:
+    df = pd.read_csv(DAILY_WEATHER_OUTPUT_PATH)
+    df = df.drop(columns=["Climate ID", "Name", "Latitude", "Longitude", "Province"])
+    
+    columns = {
+        "Station ID": "StationID",
+        "Date": "WeatherDate",
+        "MAX_REL_HUMIDITY": "AverageHumidity",
+        "SPEED_MAX_GUST": "AverageWindspeed",
+        "MEAN_TEMPERATURE": "AverageTemperature",
+    }
+    
+    df = df.rename(columns=columns)
+    df.dropna(inplace=True)
+    df["StationID"] = df["StationID"].astype(int)
+    
+    df.to_csv(DATAMART_DAILY_WEATHER_PATH, index=False)
+    print("Daily weather copied to Datamart")
+
+
+def copy_hotspot_to_datamart() -> None:
+    df = pd.read_csv(HOTSPOT_FILE_WITH_CLIMATE_ID)
+    df = df.drop(columns=["Climate ID", "ID"])
+    
+    columns = {
+        "Station ID": "ClosestStationID",
+        "Date": "FireDate",
+        "Latitude": "FireLatitude",
+        "Longitude": "FireLongitude",
+        "Province": "FireProvinceShort",
+        "BurnIncidentID": "FireID",
+        "Hectares Burnt": "HectaresBurnt",
+    }
+    
+    df = df.rename(columns=columns)
+    df.dropna(inplace=True)
+    
+    df["ClosestStationID"] = df["ClosestStationID"].astype(int)
+    df["FireID"] = df["FireID"].astype(int)
+    
+    df.to_csv(DATAMART_HOTSPOT_PATH, index=False)
+    print("Hotspot copied to Datamart")
+
+
+def copy_yearly_land_cost_to_datamart() -> None:
+    df = pd.read_csv(LAND_COST_FILE)
+    df = df.drop(columns=["Unnamed: 0"])
+    df.dropna(inplace=True)
+    df.to_csv(DATAMART_LAND_COST_TABLE_PATH, index=False)
+    print("Land cost copied to Datamart")
+
 
 
 if __name__ == "__main__":
     # This script assumes you have run the Rust NN preprocessing script
     station_lookup = create_station_lookup()  # Create the station lookup table and station IDs
-    weather_files = discover_weather_files()  # Discover all the weather files created by Rust NN preprocessing # Discover the hotspot file created by Rust NN preprocessing
+    weather_files = discover_files(WEATHER_DIR_IN)  # Discover all the weather files created by Rust NN preprocessing # Discover the hotspot file created by Rust NN preprocessing
     match_climate_ids(station_lookup, weather_files) # Add the appropriate station ID to each weather file
     match_hotspot_ids(station_lookup)  # Add the appropriate hotspot ID to each weather file
-    concatenate_weather_files(weather_files) # Concatenate all the weather files into one
-    generate_daily_weather_sql()
     
+    station_id_weather_files = discover_files(WEATHER_DIR_STATION_IDS)  # Discover all the weather files with station IDs
+    concatenate_weather_files(station_id_weather_files) # Concatenate all the weather files into one
+    copy_inventory_to_datamart()
+    copy_daily_weather_to_datamart()
+    copy_hotspot_to_datamart()
+    copy_yearly_land_cost_to_datamart()
     
     print("Done!")

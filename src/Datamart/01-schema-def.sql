@@ -22,10 +22,10 @@ CREATE TABLE IF NOT EXISTS ProvinceLookupTable(
 
 CREATE TABLE IF NOT EXISTS StationLookupTable(
     StationID int PRIMARY KEY,
-    StationName VARCHAR(70)
+    StationName VARCHAR(70),
     StationLatitude double precision NOT NULL,
     StationLongitude double precision NOT NULL,
-    StationProvinceShort province_short,
+    StationProvinceShort province_short
 );
 
 CREATE TABLE IF NOT EXISTS DailyWeather(
@@ -38,10 +38,11 @@ CREATE TABLE IF NOT EXISTS DailyWeather(
 );
 
 CREATE TABLE IF NOT EXISTS BurnIncident(
+    FireID int NOT NULL,
     BurnIncidentID int UNIQUE GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     ClosestStationID int REFERENCES StationLookupTable(StationID) NOT NULL,
-    FireLatitude double precision,
-    FireLongitude double precision,
+    FireLatitude double precision NOT NULl,
+    FireLongitude double precision NOT NULl,
     FireProvinceShort province_short NOT NULl,
     FireDate date NOT NULL,
     HectaresBurnt double precision NOT NULL
