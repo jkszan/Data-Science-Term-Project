@@ -9,4 +9,7 @@ edition = "2021"
 postgres = "0.19.7"
 polars = { version = "0.38.3", features = ["lazy","dtype-datetime"]}
 instant-distance = "0.5.0"
-
+reqwest = {version = "0.12.1", features = ["blocking"]}
+chrono = "0.4.35"
+indicatif = "0.17.8"
+pariter = "0.5.1"
