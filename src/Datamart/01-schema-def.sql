@@ -23,15 +23,14 @@ CREATE TABLE IF NOT EXISTS ProvinceLookupTable(
 CREATE TABLE IF NOT EXISTS StationLookupTable(
     StationID int PRIMARY KEY,
     StationName VARCHAR(70)
+    StationLatitude double precision NOT NULL,
+    StationLongitude double precision NOT NULL,
+    StationProvinceShort province_short,
 );
 
 CREATE TABLE IF NOT EXISTS DailyWeather(
     StationID int REFERENCES StationLookupTable(StationID) NOT NULL,
     WeatherDate date NOT NULL,
-    StationName VARCHAR(70),
-    StationLatitude double precision NOT NULL,
-    StationLongitude double precision NOT NULL,
-    StationProvinceShort province_short,
     AverageTemperature double precision, --NOT NULL,
     AverageWindspeed double precision, -- NOT NULL,
     AverageHumidity double precision, -- NOT NULL,
