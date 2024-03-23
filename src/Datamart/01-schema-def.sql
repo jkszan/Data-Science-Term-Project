@@ -15,21 +15,26 @@ CREATE TYPE province_short AS ENUM(
     'NU'
 );
 
+CREATE TABLE IF NOT EXISTS ProvinceLookupTable(
+    ProvinceID int PRIMARY KEY,
+    ProvinceShort province_short
+);
+
 CREATE TABLE IF NOT EXISTS StationLookupTable(
     StationID int PRIMARY KEY,
-    StationName VARCHAR(50)
+    StationName VARCHAR(70)
 );
 
 CREATE TABLE IF NOT EXISTS DailyWeather(
     StationID int REFERENCES StationLookupTable(StationID) NOT NULL,
     WeatherDate date NOT NULL,
-    StationName VARCHAR(50),
+    StationName VARCHAR(70),
     StationLatitude double precision NOT NULL,
     StationLongitude double precision NOT NULL,
     StationProvinceShort province_short,
-    AverageTemperature double precision NOT NULL,
-    AverageWindspeed double precision NOT NULL,
-    AverageHumidity double precision NOT NULL,
+    AverageTemperature double precision, --NOT NULL,
+    AverageWindspeed double precision, -- NOT NULL,
+    AverageHumidity double precision, -- NOT NULL,
     PRIMARY KEY(StationID, WeatherDate)
 );
 
@@ -44,8 +49,11 @@ CREATE TABLE IF NOT EXISTS BurnIncident(
 );
 -- Note, changed Date in "Burnincident" and "Dailyweather"
 
+-- Did we want a province ID here? Not sure tbh
 CREATE TABLE IF NOT EXISTS YearlyLandCost(
-    Provrow['SIZE'], tProvinceShort province_short NOT NULL,
+    ProvinceID int REFERENCES ProvinceLookupTable(ProvinceID),
+    CostProvinceShort province_short NOT NULL,
+    CostYear int NOT NULL,
     DollarPerAcre double precision,
     DollarPerHectare double precision NOT NULL,
     InflationScalar double precision NOT NULL,
@@ -55,7 +63,7 @@ CREATE TABLE IF NOT EXISTS YearlyLandCost(
 CREATE TABLE IF NOT EXISTS DailyBurnCost(
     StationID int REFERENCES StationLookupTable(StationID),
     BurnCostDate date NOT NULL,
-    ProvinceID int REFERENCES YearlyLandCost(ProvinceID) NOT NULL,
+    ProvinceID int REFERENCES ProvinceLookupTable(ProvinceID) NOT NULL,
     BurnIncidentID int REFERENCES BurnIncident(BurnIncidentID) NOT NULL,
     FireProvinceShort province_short NOT NULL,
     AverageTemperature double precision,
