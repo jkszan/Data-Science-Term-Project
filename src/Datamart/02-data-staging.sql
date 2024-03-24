@@ -15,10 +15,10 @@ COPY StationLookupTable(
 ) FROM '/docker-entrypoint-initdb.d/station_lookup_table.csv' DELIMITER ',' CSV HEADER;
 
 COPY DailyWeather(
-    AverageWindspeed,
-    AverageTemperature,
     AverageHumidity,
     WeatherDate,
+    AverageWindspeed,
+    AverageTemperature,
     StationID
 ) FROM '/docker-entrypoint-initdb.d/daily_weather_table.csv' DELIMITER ',' CSV HEADER;
 
@@ -32,10 +32,16 @@ COPY BurnIncident(
     ClosestStationID
 ) FROM '/docker-entrypoint-initdb.d/hotspot_table.csv' DELIMITER ',' CSV HEADER;
 
+COPY ProvinceLookupTable(
+    ProvinceShort,
+    ProvinceID
+) FROM '/docker-entrypoint-initdb.d/province_lookup.csv' DELIMITER ',' CSV HEADER;
+
 COPY YearlyLandCost(
     CostYear,
     CostProvinceShort,
     DollarPerAcre,
     InflationScalar,
-    DollarPerHectare
+    DollarPerHectare,
+    ProvinceID
 ) FROM '/docker-entrypoint-initdb.d/land_cost_table.csv' DELIMITER ',' CSV HEADER;

@@ -27,6 +27,7 @@ STATION_LOOKUP_PATH: Path = Path("../data/station_lookup.csv")
 DATAMART_STATION_LOOKUP_PATH: Path = Path("./Datamart/station_lookup_table.csv")
 DATAMART_DAILY_WEATHER_PATH: Path = Path("./Datamart/daily_weather_table.csv")
 DATAMART_HOTSPOT_PATH: Path = Path("./Datamart/hotspot_table.csv")
+DATAMART_PROVINCE_LOOKUP_PATH: Path = Path("./Datamart/province_lookup.csv")
 LAND_COST_FILE: Path = Path("../data/land_cost.csv")
 DATAMART_LAND_COST_TABLE_PATH: Path = Path("./Datamart/land_cost_table.csv")
 
@@ -217,17 +218,37 @@ def copy_hotspot_to_datamart() -> None:
     df.to_csv(DATAMART_HOTSPOT_PATH, index=False)
     print("Hotspot copied to Datamart")
 
+provinces = {
+    'NL': 0,
+    'PE': 1,
+    'NS': 2,
+    'NB': 3,
+    'QC': 4,
+    'ON': 5,
+    'MB': 6,
+    'SK': 7,
+    'AB': 8,
+    'BC': 9,
+    'YT': 10,
+    'NT': 11,
+    'NU': 12
+}
+
+def copy_province_lookup_to_datamart() -> None:
+    df = pd.DataFrame(provinces.items(), columns=['ProvinceShort', 'ProvinceID'])
+    df.to_csv(DATAMART_PROVINCE_LOOKUP_PATH, index=False)
+    print("Province lookup table copied to Datamart")
 
 def copy_yearly_land_cost_to_datamart() -> None:
     df = pd.read_csv(LAND_COST_FILE)
     df = df.drop(columns=["Unnamed: 0"])
     df.dropna(inplace=True)
+    df['ProvinceID'] = df['CostProvinceShort'].apply(lambda short: provinces[short])
     df.to_csv(DATAMART_LAND_COST_TABLE_PATH, index=False)
     print("Land cost copied to Datamart")
 
-
-
 if __name__ == "__main__":
+
     # This script assumes you have run the Rust NN preprocessing script
     station_lookup = create_station_lookup()  # Create the station lookup table and station IDs
     weather_files = discover_files(WEATHER_DIR_IN)  # Discover all the weather files created by Rust NN preprocessing # Discover the hotspot file created by Rust NN preprocessing
@@ -239,6 +260,7 @@ if __name__ == "__main__":
     copy_inventory_to_datamart()
     copy_daily_weather_to_datamart()
     copy_hotspot_to_datamart()
+    copy_province_lookup_to_datamart()
     copy_yearly_land_cost_to_datamart()
     
     print("Done!")
