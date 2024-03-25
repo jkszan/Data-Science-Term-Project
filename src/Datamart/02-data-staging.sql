@@ -23,6 +23,7 @@ COPY DailyWeather(
 ) FROM '/docker-entrypoint-initdb.d/daily_weather_table.csv' DELIMITER ',' CSV HEADER;
 
 COPY BurnIncident(
+    BurnIncidentID,
     FireProvinceShort,
     FireID,
     HectaresBurnt,
@@ -45,3 +46,15 @@ COPY YearlyLandCost(
     DollarPerHectare,
     ProvinceID
 ) FROM '/docker-entrypoint-initdb.d/land_cost_table.csv' DELIMITER ',' CSV HEADER;
+
+COPY DailyBurnCost(
+    StationID,
+    BurnIncidentID,
+    ProvinceID,
+    BurnCostDate,
+    FireProvinceShort,
+    AverageTemperature,
+    AverageHumidity,
+    AverageWindspeed,
+    HectaresBurnt,Cost
+) FROM '/docker-entrypoint-initdb.d/daily_burn.csv' DELIMITER ',' CSV HEADER;

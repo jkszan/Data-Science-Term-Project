@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS DailyWeather(
 
 CREATE TABLE IF NOT EXISTS BurnIncident(
     FireID int NOT NULL,
-    BurnIncidentID int UNIQUE GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    BurnIncidentID int PRIMARY KEY,
     ClosestStationID int REFERENCES StationLookupTable(StationID) NOT NULL,
     FireLatitude double precision NOT NULl,
     FireLongitude double precision NOT NULl,
@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS DailyBurnCost(
     FireProvinceShort province_short NOT NULL,
     AverageTemperature double precision,
     AverageHumidity double precision,
+    AverageWindspeed double precision,
     HectaresBurnt double precision,
     Cost double precision,
     PRIMARY KEY(StationID, BurnCostDate, ProvinceID, BurnIncidentID)

@@ -30,6 +30,7 @@ DATAMART_HOTSPOT_PATH: Path = Path("./Datamart/hotspot_table.csv")
 DATAMART_PROVINCE_LOOKUP_PATH: Path = Path("./Datamart/province_lookup.csv")
 LAND_COST_FILE: Path = Path("../data/land_cost.csv")
 DATAMART_LAND_COST_TABLE_PATH: Path = Path("./Datamart/land_cost_table.csv")
+DATAMART_DAILY_BURN_COST_PATH: Path = Path("./Datamart/daily_burn.csv")
 
 def create_station_lookup() -> pd.DataFrame:
     columns = ["Climate ID", "Name", "Latitude", "Longitude", "Province"]
@@ -140,6 +141,7 @@ def match_hotspot_ids(station_lookup: pd.DataFrame) -> None:
     assert "Hectares Burnt" in df.columns, "Hectares Burnt column not found in hotspot file"
 
     df["Station ID"] = df["Climate ID"].apply(lambda x: find_station_id(station_lookup, str(x)))
+    df.dropna(inplace=True)
     
     df.to_csv(HOTSPOT_FILE_WITH_CLIMATE_ID, index=False)
 
@@ -197,21 +199,22 @@ def copy_daily_weather_to_datamart() -> None:
 
 def copy_hotspot_to_datamart() -> None:
     df = pd.read_csv(HOTSPOT_FILE_WITH_CLIMATE_ID)
-    df = df.drop(columns=["Climate ID", "ID"])
     
     columns = {
+        "ID": "BurnIncidentID",
         "Station ID": "ClosestStationID",
         "Date": "FireDate",
         "Latitude": "FireLatitude",
         "Longitude": "FireLongitude",
         "Province": "FireProvinceShort",
         "BurnIncidentID": "FireID",
-        "Hectares Burnt": "HectaresBurnt",
+        "Hectares Burnt": "HectaresBurnt"
     }
     
     df = df.rename(columns=columns)
+    df = df.drop(columns=["Climate ID"])
     df.dropna(inplace=True)
-    
+
     df["ClosestStationID"] = df["ClosestStationID"].astype(int)
     df["FireID"] = df["FireID"].astype(int)
     
@@ -247,6 +250,32 @@ def copy_yearly_land_cost_to_datamart() -> None:
     df.to_csv(DATAMART_LAND_COST_TABLE_PATH, index=False)
     print("Land cost copied to Datamart")
 
+import datetime
+def copy_fact_table_entries_to_datamart():
+    weather_df = pd.read_csv(DATAMART_DAILY_WEATHER_PATH).rename(columns={"WeatherDate":"BurnCostDate"})
+    weather_df['BurnCostDate'] = weather_df['BurnCostDate'].apply(lambda date: datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').date())
+
+    land_cost_df = pd.read_csv(DATAMART_LAND_COST_TABLE_PATH).rename(columns={"CostProvinceShort": "FireProvinceShort"})
+
+    fire_data_df = pd.read_csv(DATAMART_HOTSPOT_PATH).rename(columns={"FireDate":"BurnCostDate", "ClosestStationID":"StationID"})
+    fire_data_df['BurnCostDate'] = fire_data_df['BurnCostDate'].apply(lambda date: datetime.datetime.strptime(date, '%Y-%m-%d').date())
+    fire_data_df['Year'] = fire_data_df['BurnCostDate'].apply(lambda date: date.year)
+
+    daily_burn = fire_data_df.merge(land_cost_df, on=["Year", "FireProvinceShort"])
+    daily_burn = daily_burn.merge(weather_df, on=["StationID", "BurnCostDate"])
+
+    # Finding Province ID from short
+    daily_burn['ProvinceID'] = daily_burn['FireProvinceShort'].apply(lambda prov: provinces[prov])
+
+    # Deriving Cost
+    daily_burn['Cost'] = daily_burn.apply(lambda fact: fact['HectaresBurnt']*fact['DollarPerHectare'], axis=1)
+
+    # Dropping all but relevant columns
+    daily_burn = daily_burn[['StationID', 'BurnIncidentID', 'ProvinceID', 'BurnCostDate', 'FireProvinceShort', 'AverageTemperature', 'AverageHumidity', 'AverageWindspeed', 'HectaresBurnt', 'Cost']]
+    
+    # Creating fact table CSV
+    daily_burn.to_csv(DATAMART_DAILY_BURN_COST_PATH, index=False)
+
 if __name__ == "__main__":
 
     # This script assumes you have run the Rust NN preprocessing script
@@ -262,5 +291,7 @@ if __name__ == "__main__":
     copy_hotspot_to_datamart()
     copy_province_lookup_to_datamart()
     copy_yearly_land_cost_to_datamart()
+    copy_fact_table_entries_to_datamart()
+
     
     print("Done!")
