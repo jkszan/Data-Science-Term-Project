@@ -283,7 +283,11 @@ fn main() -> Result<(), String> {
     if let Ok(new_firestations_file) = File::create(path) {
         let writer = CsvWriter::new(new_firestations_file);
         writer.include_header(true).finish(hotspot_data).unwrap();
+<<<<<<< HEAD
         println!("_station mapping written to {}", path);
+=======
+        println!("firedata_station mapping written to {}", path);
+>>>>>>> 30d13dc (Made Temp check actually work, remove unuseful files)
     }
 
     Ok(())
