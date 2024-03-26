@@ -164,7 +164,7 @@ fn main() -> Result<(), String> {
         .finish()
         .unwrap()
         .lazy()
-//        .filter(col("Date").gt(lit(NaiveDate::from_str("2022-10-08").unwrap())))  -- test set
+//        .filter(col("Date").gt(lit(NaiveDate::from_str("2022-10-08").unwrap()))) //test set
         .filter(col("FireLatitude").is_not_null())
         .filter(col("FireLongitude").is_not_null())
         .collect()
@@ -248,9 +248,9 @@ fn main() -> Result<(), String> {
                             .expect("Could not write weather to file");
                         new_firestations_file.flush().unwrap();
 
-                        //if !station_has_meantemp(&station_path){
-                        //    std::fs::remove_file(&station_path).expect("Error removing non-useful file");
-                        //}
+                        if !station_has_meantemp(&station_path){
+                            std::fs::remove_file(&station_path).expect("Error removing non-useful file");
+                        }
                     }
                 }
             }
@@ -270,8 +270,10 @@ fn main() -> Result<(), String> {
                         .filter(col("MEAN_TEMPERATURE").is_not_null())
                         .collect();
                     if let Ok(good_measurements) = measurements {
-                        closest_station = Some(station.to_string());
-                        break;
+                        if good_measurements.shape().0 > 0{
+                            closest_station = Some(station.to_string());
+                            break;
+                        }
                     }
                 }
             }
