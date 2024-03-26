@@ -2,9 +2,10 @@ use chrono::{Datelike, NaiveDate};
 use indicatif::ProgressIterator;
 use instant_distance::{Builder, Search};
 use polars::io::csv::CsvReader;
-use polars::lazy::dsl::{col, lit};
+use polars::lazy::dsl::col;
 use polars::prelude::*;
 use reqwest::blocking::Client;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
@@ -22,11 +23,16 @@ impl instant_distance::Point for Point {
 const UNIXSTARTDAY: i32 = 719_163;
 const WEATHER_DIRECTORY: &str = "../../../data/weather";
 
-fn station_has_meantemp(path: &Path) -> bool{
-    if let Ok(reader) = CsvReader::from_path(path){
+fn station_has_meantemp(
+    station: &str,
+    path: &Path,
+    inverted_index: &mut HashMap<NaiveDate, Vec<String>>,
+) -> bool {
+    if let Ok(reader) = CsvReader::from_path(path) {
         if let Ok(weather_station) = reader
             .infer_schema(None)
             .has_header(true)
+            .with_try_parse_dates(true)
             .truncate_ragged_lines(true)
             .finish()
         {
@@ -35,7 +41,23 @@ fn station_has_meantemp(path: &Path) -> bool{
                 .filter(col("MEAN_TEMPERATURE").is_not_null())
                 .collect();
             if let Ok(good_measurements) = measurements {
-                if good_measurements.shape().0 > 0 {
+                if good_measurements.shape().0 <= 0 {
+                    return false;
+                }
+                if let Ok(Ok(dates)) = good_measurements
+                    .column("LOCAL_DATE")
+                    .map(|col| col.datetime())
+                {
+                    for dateopt in dates.as_datetime_iter(){
+                        if let Some(datetime) = dateopt {
+                            let date = datetime.date();
+                            if let Some(index) = inverted_index.get_mut(&date) {
+                                index.push(station.to_string());
+                            } else {
+                                inverted_index.insert(date,vec![station.to_string()]);
+                            }
+                        }
+                    }
                     return true;
                 }
             }
@@ -154,6 +176,22 @@ fn get_closest_ranking(hotspot_data: &mut DataFrame) -> Result<Vec<Vec<String>>,
 fn main() -> Result<(), String> {
     let client = Client::new();
 
+    let weather_stations = CsvReader::from_path("../../../data/station_inventory.csv")
+        .unwrap()
+        .infer_schema(None)
+        .has_header(true)
+        .truncate_ragged_lines(true)
+        .finish()
+        .unwrap();
+
+    let station_ids: Vec<Option<&str>> = weather_stations
+        .column("Climate ID")
+        .unwrap()
+        .str()
+        .unwrap()
+        .iter()
+        .collect();
+
     let mut hotspot_data = CsvReader::from_path("../../../data/firedata_no_station.csv")
         .unwrap()
         .infer_schema(None)
@@ -163,7 +201,7 @@ fn main() -> Result<(), String> {
         .finish()
         .unwrap()
         .lazy()
-//        .filter(col("Date").gt(lit(NaiveDate::parse_from_str("2022-10-08","%Y-%m-%d").unwrap()))) //test set
+        //        .filter(col("Date").gt(lit(NaiveDate::parse_from_str("2022-10-08","%Y-%m-%d").unwrap()))) //test set
         .filter(col("FireLatitude").is_not_null())
         .filter(col("FireLongitude").is_not_null())
         .collect()
@@ -186,96 +224,82 @@ fn main() -> Result<(), String> {
         std::fs::create_dir(weather_dir).expect("Failed creating weather download dir");
     }
 
-    let mut processed_stations: Vec<String> = Vec::new();
+    let mut inverted_index = HashMap::new();
 
-    for (dateint, ranking) in fire_dates.iter().zip(closest_ranking.iter()).progress() {
-        let mut closest_station = None;
-        for station in ranking {
-            let station_path = weather_dir.join(station).with_extension("csv");
-            if !processed_stations.contains(station){
-                processed_stations.push(station.clone());
-                let mut weather = String::new();
-                for pre_millenium in [true, false] {
-                    let start = if pre_millenium {
-                        earliest_date.to_string()
-                    } else {
-                        String::from("2000-01-01")
-                    };
-                    let end = if !pre_millenium {
-                        latest_date.to_string()
-                    } else {
-                        String::from("1999-12-31")
-                    };
-                    let url = format!("
+    let all_stations = closest_ranking.iter().fold(HashSet::new(),|mut set,iter| {set.extend(iter.iter()); set});
+
+    // Download all stations
+    for station in all_stations.iter().progress() {
+        let station_path = weather_dir.join(station).with_extension("csv");
+        let mut weather = String::new();
+        if !station_path.exists(){
+            for pre_millenium in [true, false] {
+                let start = if pre_millenium {
+                    earliest_date.to_string()
+                } else {
+                    String::from("2000-01-01")
+                };
+                let end = if !pre_millenium {
+                    latest_date.to_string()
+                } else {
+                    String::from("1999-12-31")
+                };
+                let url = format!("
                                 https://api.weather.gc.ca/collections/climate-daily/items?f=csv&lang=en-CA&sortby=LOCAL_DATE&skipGeometry=false&limit=10000\
                                       &offset=0&datetime={}%2000:00:00/{}%2000:00:00&CLIMATE_IDENTIFIER={}&\
                                       properties=LOCAL_DATE,STATION_NAME,MEAN_TEMPERATURE,CLIMATE_IDENTIFIER,SPEED_MAX_GUST,MAX_REL_HUMIDITY,PROVINCE_CODE",
                                       start,end,station);
-                    let request = client
-                        .get(url)
-                        .build()
-                        .expect("FAILED TO BUILD WEATHER URL REQUEST");
-                    if let Ok(response) = client.execute(request) {
-                        if let Ok(mut response) = response.error_for_status() {
-                            if pre_millenium {
-                                response
-                                    .read_to_string(&mut weather)
-                                    .expect("Could not parse Weather response");
-                                weather = String::from(weather.trim_end());
-                            } else{
-                                let mut string_buf = String::new();
-                                response
-                                    .read_to_string(&mut string_buf)
-                                    .expect("Could not parse Weather response");
-                                if !weather.is_empty(){
+                let request = client
+                    .get(url)
+                    .build()
+                    .expect("FAILED TO BUILD WEATHER URL REQUEST");
+                if let Ok(response) = client.execute(request) {
+                    if let Ok(mut response) = response.error_for_status() {
+                        if pre_millenium {
+                            response
+                                .read_to_string(&mut weather)
+                                .expect("Could not parse Weather response");
+                            weather = String::from(weather.trim_end());
+                        } else {
+                            let mut string_buf = String::new();
+                            response
+                                .read_to_string(&mut string_buf)
+                                .expect("Could not parse Weather response");
+                            if !weather.is_empty() {
                                 // Remove first header line
                                 string_buf = string_buf
                                     .lines()
                                     .skip(1)
                                     .fold(String::new(), |acc, line| format!("{}\n{}", acc, line));
-                                    string_buf = format!("\n{}",string_buf);
-                                }
-                                weather.push_str(&string_buf);
+                                string_buf = format!("\n{}", string_buf);
                             }
+                            weather.push_str(&string_buf);
                         }
                     }
                 }
-                if !weather.is_empty(){
-                    if let Ok(mut new_firestations_file) = File::create(&station_path) {
-                        new_firestations_file
-                            .write(weather.as_bytes())
-                            .expect("Could not write weather to file");
-                        new_firestations_file.flush().unwrap();
+            }
+        }
+        if !weather.is_empty() {
+            if let Ok(mut new_firestations_file) = File::create(&station_path) {
+                new_firestations_file
+                    .write(weather.as_bytes())
+                    .expect("Could not write weather to file");
+                new_firestations_file.flush().unwrap();
 
-                        if !station_has_meantemp(&station_path){
-                            std::fs::remove_file(&station_path).expect("Error removing non-useful file");
-                        }
-                    }
+                if !station_has_meantemp(&station, &station_path, &mut inverted_index) {
+                    std::fs::remove_file(&station_path).expect("Error removing non-useful file");
                 }
             }
-            if let Ok(reader) = CsvReader::from_path(&station_path){
-                if let Ok(weather_station) = reader
-                    .infer_schema(None)
-                    .has_header(true)
-                    .with_try_parse_dates(true)
-                    .truncate_ragged_lines(true)
-                    .finish()
-                {
-                    let date =
-                        NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + dateint.unwrap()).unwrap();
-                    let measurements = weather_station
-                        .lazy()
-                        .filter(col("LOCAL_DATE").eq(lit(date)))
-                        .filter(col("MEAN_TEMPERATURE").is_not_null())
-                        .collect();
-                    if let Ok(good_measurements) = measurements {
-                        if good_measurements.shape().0 > 0{
-                            closest_station = Some(station.to_string());
-                            break;
-                        }
-                    }
-                }
-            }
+        }
+    }
+
+    for (dateopt, ranking) in fire_dates.iter().zip(closest_ranking.iter()).progress() {
+        let mut closest_station = None;
+        if dateopt.is_none(){continue;}
+        let date = NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + dateopt.unwrap()).unwrap();
+        for station in ranking.iter().filter(|station| inverted_index.get(&date).is_some_and(|index| index.contains(station))) {
+            closest_station = Some(station.clone());
+            break;
         }
         closest_stations.push(closest_station);
     }
