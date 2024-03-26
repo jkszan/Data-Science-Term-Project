@@ -170,7 +170,7 @@ fn main() -> Result<(), String> {
         .unwrap();
 
     let closest_ranking = get_closest_ranking(&mut hotspot_data)?;
-        
+
     let fire_dates = hotspot_data.column("Date").unwrap().date().unwrap();
 
     let earliest_date =

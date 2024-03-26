@@ -12,13 +12,13 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 def download():
     for year in range(1994, 2023):
-        DATA_DIR = tmp_dir / f"zip/{year}_hotspots.zip" 
-        
+        DATA_DIR = tmp_dir / f"zip/{year}_hotspots.zip"
+
         r = requests.get(f"{url}/{year}_hotspots.zip", stream=True)
         with open(DATA_DIR, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
-        
+
         # unzip the file
         os.system(f"unzip {DATA_DIR} -d {tmp_dir / 'unzip/'}")
         print(f"Unzipped {year} data")

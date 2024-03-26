@@ -30,7 +30,7 @@ def getStationLookupEntry(stationName, lat, long):
     for id, name, _, _ in stationLookup:
         if name == stationName:
             return id
-    
+
     newStationID = len(stationLookup) + 1
     stationLookup.append((newStationID, stationName, lat, long))
     return newStationID
@@ -87,7 +87,7 @@ for stationID, stationName, _, _ in stationLookup:
 fireImport = ""
 
 for latitude, longitude, provinceShort, fireDate, fireEndDate, hectares in fireData:
-    
+
     realStationID = findClosestStationID(latitude, longitude)
     fireImport += addFireData(realStationID, latitude, longitude, provinceShort, fireDate, fireEndDate, hectares)
 

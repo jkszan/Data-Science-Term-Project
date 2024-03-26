@@ -104,7 +104,7 @@ def requestRequiredWeather(stationNameIndex, requiredWeather):
 
     weatherData = []
     failedRetrievals = []
-    
+
     with ProcessPoolExecutor(max_workers=40) as e:
         futures = [e.submit(getWeatherInfo, stationNameIndex, stationID, date) for stationID, date in list(requiredWeather)]
 
