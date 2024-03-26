@@ -163,7 +163,7 @@ fn main() -> Result<(), String> {
         .finish()
         .unwrap()
         .lazy()
-        .filter(col("Date").gt(lit(NaiveDate::parse_from_str("2022-10-08","%Y-%m-%d").unwrap()))) //test set
+//        .filter(col("Date").gt(lit(NaiveDate::parse_from_str("2022-10-08","%Y-%m-%d").unwrap()))) //test set
         .filter(col("FireLatitude").is_not_null())
         .filter(col("FireLongitude").is_not_null())
         .collect()
