@@ -8,7 +8,6 @@ use reqwest::blocking::Client;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
-use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug)]
 struct Point(f64, f64);
@@ -164,7 +163,7 @@ fn main() -> Result<(), String> {
         .finish()
         .unwrap()
         .lazy()
-//        .filter(col("Date").gt(lit(NaiveDate::from_str("2022-10-08").unwrap()))) //test set
+        .filter(col("Date").gt(lit(NaiveDate::parse_from_str("2022-10-08","%Y-%m-%d").unwrap()))) //test set
         .filter(col("FireLatitude").is_not_null())
         .filter(col("FireLongitude").is_not_null())
         .collect()
@@ -289,11 +288,7 @@ fn main() -> Result<(), String> {
     if let Ok(new_firestations_file) = File::create(path) {
         let writer = CsvWriter::new(new_firestations_file);
         writer.include_header(true).finish(hotspot_data).unwrap();
-<<<<<<< HEAD
         println!("_station mapping written to {}", path);
-=======
-        println!("firedata_station mapping written to {}", path);
->>>>>>> 30d13dc (Made Temp check actually work, remove unuseful files)
     }
 
     Ok(())
