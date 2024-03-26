@@ -163,13 +163,14 @@ fn main() -> Result<(), String> {
         .finish()
         .unwrap()
         .lazy()
+        .filter(col("Date").gt(lit(NaiveDate::parse_from_str("2022-10-08","%Y-%m-%d").unwrap()))) //test set
         .filter(col("FireLatitude").is_not_null())
         .filter(col("FireLongitude").is_not_null())
         .collect()
         .unwrap();
 
     let closest_ranking = get_closest_ranking(&mut hotspot_data)?;
-
+        
     let fire_dates = hotspot_data.column("Date").unwrap().date().unwrap();
 
     let earliest_date =
@@ -177,7 +178,7 @@ fn main() -> Result<(), String> {
     let latest_date =
         NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + fire_dates.max().unwrap()).unwrap();
 
-    let mut closest_stations: Vec<String> = Vec::with_capacity(fire_dates.len());
+    let mut closest_stations: Vec<Option<String>> = Vec::with_capacity(fire_dates.len());
 
     let weather_dir = Path::new(WEATHER_DIRECTORY);
 
@@ -188,11 +189,11 @@ fn main() -> Result<(), String> {
     let mut processed_stations: Vec<String> = Vec::new();
 
     for (dateint, ranking) in fire_dates.iter().zip(closest_ranking.iter()).progress() {
+        let mut closest_station = None;
         for station in ranking {
             let station_path = weather_dir.join(station).with_extension("csv");
-            if processed_stations.contains(station){
+            if !processed_stations.contains(station){
                 processed_stations.push(station.clone());
-                println!("station {}", station);
                 let mut weather = String::new();
                 for pre_millenium in [true, false] {
                     let start = if pre_millenium {
@@ -221,17 +222,20 @@ fn main() -> Result<(), String> {
                                     .read_to_string(&mut weather)
                                     .expect("Could not parse Weather response");
                                 weather = String::from(weather.trim_end());
-                            } else if !weather.is_empty() {
+                            } else{
                                 let mut string_buf = String::new();
                                 response
                                     .read_to_string(&mut string_buf)
                                     .expect("Could not parse Weather response");
+                                if !weather.is_empty(){
                                 // Remove first header line
                                 string_buf = string_buf
                                     .lines()
                                     .skip(1)
                                     .fold(String::new(), |acc, line| format!("{}\n{}", acc, line));
-                                weather.push_str(&format!("\n{}",string_buf));
+                                    string_buf = format!("\n{}",string_buf);
+                                }
+                                weather.push_str(&string_buf);
                             }
                         }
                     }
@@ -253,26 +257,27 @@ fn main() -> Result<(), String> {
                 if let Ok(weather_station) = reader
                     .infer_schema(None)
                     .has_header(true)
+                    .with_try_parse_dates(true)
                     .truncate_ragged_lines(true)
                     .finish()
                 {
                     let date =
                         NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + dateint.unwrap()).unwrap();
-                    let str_date = date.to_string();
                     let measurements = weather_station
                         .lazy()
-                        .filter(col("LOCAL_DATE").eq(lit(str_date)))
+                        .filter(col("LOCAL_DATE").eq(lit(date)))
                         .filter(col("MEAN_TEMPERATURE").is_not_null())
                         .collect();
                     if let Ok(good_measurements) = measurements {
-                        if good_measurements.shape().0 > 0 {
-                            closest_stations.push(station.to_string());
+                        if good_measurements.shape().0 > 0{
+                            closest_station = Some(station.to_string());
                             break;
                         }
                     }
                 }
             }
         }
+        closest_stations.push(closest_station);
     }
 
     let hotspot_data = hotspot_data
