@@ -1,11 +1,3 @@
--- INSERT INTO YearlyLandCost(
---     CostYear,
---     CostProvinceShort,
---     DollarPerAcre,
---     DollarPerHectare,
---     InflationScalar
--- ) VALUES (2000, 'ON', 1, 1000, 1);
-
 COPY StationLookupTable(
     StationName,
     StationLatitude,
@@ -15,8 +7,8 @@ COPY StationLookupTable(
 ) FROM '/docker-entrypoint-initdb.d/station_lookup_table.csv' DELIMITER ',' CSV HEADER;
 
 COPY DailyWeather(
-    AverageHumidity,
-    AverageWindspeed,
+    MaxRelativeHumidity,
+    MaxWindspeedGust,
     WeatherDate,
     AverageTemperature,
     StationID
@@ -54,7 +46,7 @@ COPY DailyBurnCost(
     BurnCostDate,
     FireProvinceShort,
     AverageTemperature,
-    AverageHumidity,
-    AverageWindspeed,
+    MaxRelativeHumidity,
+    MaxWindspeedGust,
     HectaresBurnt,Cost
 ) FROM '/docker-entrypoint-initdb.d/daily_burn.csv' DELIMITER ',' CSV HEADER;

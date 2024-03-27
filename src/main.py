@@ -37,7 +37,6 @@ def create_station_lookup() -> pd.DataFrame:
     columns = ["Climate ID", "Name", "Latitude", "Longitude", "Province"]
     df = pd.read_csv("../data/station_inventory.csv")
     df = df[columns]
-
     # Map latitude and longitude to their decimal values
     convert_to_decimal = lambda x: x / 1e7
     df["Latitude"] = df["Latitude"].apply(convert_to_decimal)
@@ -181,8 +180,8 @@ def copy_daily_weather_to_datamart() -> None:
     columns = {
         "Station ID": "StationID",
         "Date": "WeatherDate",
-        "MAX_REL_HUMIDITY": "AverageHumidity",
-        "SPEED_MAX_GUST": "AverageWindspeed",
+        "MAX_REL_HUMIDITY": "MaxRelativeHumidity",
+        "SPEED_MAX_GUST": "MaxWindspeedGust",
         "MEAN_TEMPERATURE": "AverageTemperature",
     }
 
@@ -267,8 +266,8 @@ def copy_fact_table_entries_to_datamart():
     daily_burn['Cost'] = daily_burn.apply(lambda fact: fact['HectaresBurnt']*fact['DollarPerHectare'], axis=1)
 
     # Dropping all but relevant columns
-    daily_burn = daily_burn[['StationID', 'BurnIncidentID', 'ProvinceID', 'BurnCostDate', 'FireProvinceShort', 'AverageTemperature', 'AverageHumidity', 'AverageWindspeed', 'HectaresBurnt', 'Cost']]
-
+    daily_burn = daily_burn[['StationID', 'BurnIncidentID', 'ProvinceID', 'BurnCostDate', 'FireProvinceShort', 'AverageTemperature', 'MaxRelativeHumidity', 'MaxWindspeedGust', 'HectaresBurnt', 'Cost']]
+    
     # Creating fact table CSV
     daily_burn.to_csv(DATAMART_DAILY_BURN_COST_PATH, index=False)
 
