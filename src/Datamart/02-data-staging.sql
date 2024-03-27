@@ -16,8 +16,8 @@ COPY StationLookupTable(
 
 COPY DailyWeather(
     AverageHumidity,
-    WeatherDate,
     AverageWindspeed,
+    WeatherDate,
     AverageTemperature,
     StationID
 ) FROM '/docker-entrypoint-initdb.d/daily_weather_table.csv' DELIMITER ',' CSV HEADER;

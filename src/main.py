@@ -141,8 +141,7 @@ def match_hotspot_ids(station_lookup: pd.DataFrame) -> None:
     assert "Hectares Burnt" in df.columns, "Hectares Burnt column not found in hotspot file"
 
     df["Station ID"] = df["Climate ID"].apply(lambda x: find_station_id(station_lookup, str(x)))
-    df.dropna(inplace=True)
-
+    df.dropna(inplace=True, subset=['Station ID'])
     df.to_csv(HOTSPOT_FILE_WITH_CLIMATE_ID, index=False)
 
 
