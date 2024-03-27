@@ -1,4 +1,4 @@
-StationID,BurnIncidentID,ProvinceID,BurnCostDate,FireProvinceShort,AverageTemperature,AverageHumidity,AverageWindspeed,HectaresBurnt,Cost
+StationID,BurnIncidentID,ProvinceID,BurnCostDate,FireProvinceShort,AverageTemperature,MaxRelativeHumidity,MaxWindspeedGust,HectaresBurnt,Cost
 5175,0,5,1987-04-09,ON,12.3,,,6.659504258276699,3471.243012812783
 5175,206,5,1987-04-09,ON,12.3,,,4.254594996601941,2217.6925761324565
 5175,1,5,1987-04-10,ON,7.5,,,6.659504258276699,3471.243012812783

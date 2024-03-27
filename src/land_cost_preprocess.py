@@ -39,7 +39,7 @@ def pre_process_landcost():
 
     farmland.rename(columns={"VALUE":"DollarPerAcre","GEO":"CostProvinceShort","REF_DATE":"Year"},inplace=True)
     print(farmland)
-    farmland.to_csv("../YearlyLandCost.csv")
+    farmland.to_csv("../data/land_cost.csv")
     
 if __name__ == "__main__":
         pre_process_landcost()

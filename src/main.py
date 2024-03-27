@@ -186,7 +186,7 @@ def copy_daily_weather_to_datamart() -> None:
     }
 
     df = df.rename(columns=columns)
-    df.dropna(inplace=True)
+    df.dropna(inplace=True, subset=['StationID'])
     df["StationID"] = df["StationID"].astype(int)
 
     df.to_csv(DATAMART_DAILY_WEATHER_PATH, index=False)
@@ -274,13 +274,13 @@ def copy_fact_table_entries_to_datamart():
 if __name__ == "__main__":
 
     # This script assumes you have run the Rust NN preprocessing script
-    station_lookup = create_station_lookup()  # Create the station lookup table and station IDs
-    weather_files = discover_files(WEATHER_DIR_IN)  # Discover all the weather files created by Rust NN preprocessing # Discover the hotspot file created by Rust NN preprocessing
-    match_climate_ids(station_lookup, weather_files) # Add the appropriate station ID to each weather file
-    match_hotspot_ids(station_lookup)  # Add the appropriate hotspot ID to each weather file
+    #station_lookup = create_station_lookup()  # Create the station lookup table and station IDs
+    #weather_files = discover_files(WEATHER_DIR_IN)  # Discover all the weather files created by Rust NN preprocessing # Discover the hotspot file created by Rust NN preprocessing
+    #match_climate_ids(station_lookup, weather_files) # Add the appropriate station ID to each weather file
+    #match_hotspot_ids(station_lookup)  # Add the appropriate hotspot ID to each weather file
 
-    station_id_weather_files = discover_files(WEATHER_DIR_STATION_IDS)  # Discover all the weather files with station IDs
-    concatenate_weather_files(station_id_weather_files) # Concatenate all the weather files into one
+    #station_id_weather_files = discover_files(WEATHER_DIR_STATION_IDS)  # Discover all the weather files with station IDs
+    #concatenate_weather_files(station_id_weather_files) # Concatenate all the weather files into one
     copy_inventory_to_datamart()
     copy_daily_weather_to_datamart()
     copy_hotspot_to_datamart()
