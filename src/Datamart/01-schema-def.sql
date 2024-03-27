@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS StationLookupTable(
 CREATE TABLE IF NOT EXISTS DailyWeather(
     StationID int REFERENCES StationLookupTable(StationID) NOT NULL,
     WeatherDate date NOT NULL,
-    AverageTemperature double precision, --NOT NULL,
-    AverageWindspeed double precision, -- NOT NULL,
-    AverageHumidity double precision, -- NOT NULL,
+    AverageTemperature double precision,
+    MaxWindspeedGust double precision,
+    MaxRelativeHumidity double precision,
     PRIMARY KEY(StationID, WeatherDate)
 );
 
@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS DailyBurnCost(
     BurnIncidentID int REFERENCES BurnIncident(BurnIncidentID) NOT NULL,
     FireProvinceShort province_short NOT NULL,
     AverageTemperature double precision,
-    AverageHumidity double precision,
-    AverageWindspeed double precision,
+    MaxRelativeHumidity double precision,
+    MaxWindspeedGust double precision,
     HectaresBurnt double precision,
     Cost double precision,
     PRIMARY KEY(StationID, BurnCostDate, ProvinceID, BurnIncidentID)
