@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 import pandas as pd
 from tqdm import tqdm
+from land_cost_preprocess import pre_process_landcost
 import shutil
 
 
@@ -286,6 +287,7 @@ if __name__ == "__main__":
     copy_daily_weather_to_datamart()
     copy_hotspot_to_datamart()
     copy_province_lookup_to_datamart()
+    pre_process_landcost()
     copy_yearly_land_cost_to_datamart()
     copy_fact_table_entries_to_datamart()
 
