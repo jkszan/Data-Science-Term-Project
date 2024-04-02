@@ -1,16 +1,16 @@
 COPY StationLookupTable(
+    StationID,
     StationName,
     StationLatitude,
     StationLongitude,
-    StationProvinceShort,
-    StationID
+    StationProvinceShort
 ) FROM '/docker-entrypoint-initdb.d/station_lookup_table.csv' DELIMITER ',' CSV HEADER;
 
 COPY DailyWeather(
-    MaxRelativeHumidity,
-    MaxWindspeedGust,
     WeatherDate,
+    MaxRelativeHumidity,
     AverageTemperature,
+    MaxWindspeedGust,
     StationID
 ) FROM '/docker-entrypoint-initdb.d/daily_weather_table.csv' DELIMITER ',' CSV HEADER;
 
@@ -48,5 +48,6 @@ COPY DailyBurnCost(
     AverageTemperature,
     MaxRelativeHumidity,
     MaxWindspeedGust,
-    HectaresBurnt,Cost
+    HectaresBurnt,
+	Cost
 ) FROM '/docker-entrypoint-initdb.d/daily_burn.csv' DELIMITER ',' CSV HEADER;
