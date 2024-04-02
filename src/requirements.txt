@@ -5,3 +5,4 @@ pandas
 tqdm
 pyproj
 pyogrio
+scikit-learn
