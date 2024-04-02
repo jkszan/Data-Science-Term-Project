@@ -6,3 +6,9 @@ tqdm
 pyproj
 pyogrio
 scikit-learn
+imbalanced-learn
+matplotlib
+seaborn
+cartopy
+geoplot
+phik
