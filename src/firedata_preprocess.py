@@ -16,7 +16,7 @@ from pyproj import Transformer
 
 def firedata_preprocess():
 
-    fires = gpd.read_file('nbac_1986_to_2022_20230630.zip',engine="pyogrio")
+    fires = gpd.read_file('data/nbac_1986_to_2022_20230630.zip',engine="pyogrio")
 
     print("Fires not preprocessed")
     print(fires)
@@ -41,7 +41,7 @@ def firedata_preprocess():
 
     # Load Canadian province data
 
-    provinces = gpd.read_file("georef-canada-province@public.zip")
+    provinces = gpd.read_file("data/georef-canada-province@public.zip")
     print(f"crs provinces: {provinces.crs}")
     print(f"crs fires: {fires.crs}")
     provinces = provinces.to_crs(fires.crs)
@@ -90,3 +90,5 @@ def firedata_preprocess():
     # Write to file
     fires.to_csv("./firedata_no_station.csv")
 
+if __name__ == "__main__":
+    firedata_preprocess()

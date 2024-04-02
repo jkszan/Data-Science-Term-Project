@@ -86,6 +86,7 @@ def find_station_id(station_lookup: pd.DataFrame, climate_id: str) -> Optional[i
 
 def match_climate_ids(station_lookup: pd.DataFrame, weather_files: List[Path]) -> None:
     # Load the climate data
+    print("Matching Climate IDs...")
     for file in tqdm(weather_files):
         df = pd.read_csv(file)
 
@@ -101,7 +102,7 @@ def match_climate_ids(station_lookup: pd.DataFrame, weather_files: List[Path]) -
             "PROVINCE_CODE": "Province",
             "LOCAL_DATE": "Date",
         }
-        df.rename(columns=columns, inplace=True)
+        df = df.rename(columns)
 
         assert "Climate ID" in df.columns, "Climate ID column not found in weather file"
         assert "Date" in df.columns, "Date column not found in weather file"
@@ -110,11 +111,11 @@ def match_climate_ids(station_lookup: pd.DataFrame, weather_files: List[Path]) -
         assert "Province" in df.columns, "Province column not found in weather file"
 
         # Match the Climate ID to the Station ID
-        df["Station ID"] = df["Climate ID"].apply(lambda x: find_station_id(station_lookup, str(x)))
+        df["Climate ID"] = df["Climate ID"].apply(lambda x: find_station_id(station_lookup, str(x)),inplace=True)
 
         # Save the updated dataframe back to the file
         file = WEATHER_DIR_STATION_IDS / file.name
-        df.to_csv(file, index=False)
+        df.write_csv(file)
 
 def match_hotspot_ids(station_lookup: pd.DataFrame) -> None:
     df = pd.read_csv(HOTSPOT_FILE)
@@ -148,12 +149,14 @@ def concatenate_weather_files(weather_files: List[Path]) -> None:
     # Load all the weather files
     dfs = []
     for file in tqdm(weather_files):
-        dfs.append(pd.read_csv(file))
+        df = pd.read_csv(file)
+        df = df [['Longitude','Latitude','Province','Date','MAX_REL_HUMIDITY','MEAN_TEMPERATURE','Climate ID','Name','SPEED_MAX_GUST','Station ID']]
+        dfs.append(df)
 
-    # Concatenate the dataframes
+    ## Concatenate the dataframes
     df = pd.concat(dfs)
-
-    # Save the concatenated dataframe
+    df = df[~df["Date"].isna()]
+    ## Save the concatenated dataframe
     df.to_csv(DAILY_WEATHER_OUTPUT_PATH, index=False)
 
 def copy_inventory_to_datamart() -> None:
@@ -279,8 +282,8 @@ if __name__ == "__main__":
     #match_climate_ids(station_lookup, weather_files) # Add the appropriate station ID to each weather file
     #match_hotspot_ids(station_lookup)  # Add the appropriate hotspot ID to each weather file
 
-    #station_id_weather_files = discover_files(WEATHER_DIR_STATION_IDS)  # Discover all the weather files with station IDs
-    #concatenate_weather_files(station_id_weather_files) # Concatenate all the weather files into one
+    station_id_weather_files = discover_files(WEATHER_DIR_STATION_IDS)  # Discover all the weather files with station IDs
+    concatenate_weather_files(station_id_weather_files) # Concatenate all the weather files into one
     copy_inventory_to_datamart()
     copy_daily_weather_to_datamart()
     copy_hotspot_to_datamart()

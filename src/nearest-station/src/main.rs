@@ -1,9 +1,12 @@
+mod postprocessing;
+
 use chrono::{Datelike, NaiveDate};
 use indicatif::ProgressIterator;
 use instant_distance::{Builder, Search};
 use polars::io::csv::CsvReader;
 use polars::lazy::dsl::col;
 use polars::prelude::*;
+use postprocessing::postprocessing as postprocess;
 use reqwest::blocking::Client;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -173,7 +176,9 @@ fn get_closest_ranking(hotspot_data: &mut DataFrame) -> Result<Vec<Vec<String>>,
     Err(String::from("Error parsing firedata"))
 }
 
-fn main() -> Result<(), String> {
+
+
+fn make_weather_station_mapping() -> Result<(), String> {
     let client = Client::new();
 
     let weather_stations = CsvReader::from_path("../../../data/station_inventory.csv")
@@ -279,24 +284,27 @@ fn main() -> Result<(), String> {
                 }
             }
         }
-        if !weather.is_empty() {
-            if let Ok(mut new_firestations_file) = File::create(&station_path) {
+        if let Ok(mut new_firestations_file) = File::create(&station_path) {
+            if !weather.is_empty() {
                 new_firestations_file
                     .write(weather.as_bytes())
                     .expect("Could not write weather to file");
                 new_firestations_file.flush().unwrap();
-
-                if !station_has_meantemp(&station, &station_path, &mut inverted_index) {
-                    std::fs::remove_file(&station_path).expect("Error removing non-useful file");
-                }
+            }
+            if !station_has_meantemp(&station, &station_path, &mut inverted_index) {
+                std::fs::remove_file(&station_path).expect("Error removing non-useful file");
             }
         }
     }
 
     for (dateopt, ranking) in fire_dates.iter().zip(closest_ranking.iter()).progress() {
         let mut closest_station = None;
-        if dateopt.is_none(){continue;}
+        if dateopt.is_none(){
+            closest_stations.push(None);
+            continue;
+        }
         let date = NaiveDate::from_num_days_from_ce_opt(UNIXSTARTDAY + dateopt.unwrap()).unwrap();
+        println!("{:?}",inverted_index.get(&date));
         for station in ranking.iter().filter(|station| inverted_index.get(&date).is_some_and(|index| index.contains(station))) {
             closest_station = Some(station.clone());
             break;
@@ -315,5 +323,13 @@ fn main() -> Result<(), String> {
         println!("_station mapping written to {}", path);
     }
 
+
+
+    Ok(())
+}
+
+fn main() -> Result<(),String>{
+    make_weather_station_mapping();
+    postprocess();
     Ok(())
 }
