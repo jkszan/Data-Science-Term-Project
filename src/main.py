@@ -283,7 +283,7 @@ if __name__ == "__main__":
     #match_hotspot_ids(station_lookup)  # Add the appropriate hotspot ID to each weather file
 
     station_id_weather_files = discover_files(WEATHER_DIR_STATION_IDS)  # Discover all the weather files with station IDs
-    concatenate_weather_files(station_id_weather_files) # Concatenate all the weather files into one
+    # concatenate_weather_files(station_id_weather_files) # Concatenate all the weather files into one
     copy_inventory_to_datamart()
     copy_daily_weather_to_datamart()
     copy_hotspot_to_datamart()
