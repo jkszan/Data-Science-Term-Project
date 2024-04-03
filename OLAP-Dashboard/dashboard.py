@@ -1,16 +1,3 @@
-# Dashboard
-##  You will have to create a file at '~/.streamlit/secrets.toml' with contents in this format:
-##  ```
-##  [connections.postgresql]
-##  dialect = "postgresql"
-##  host = "localhost"
-##  port = "5432"
-##  database = "xxx"
-##  username = "xxx"
-##  password = "xxx"
-##  ```
-
-
 import streamlit as st
 
 def intro(psql_conn):
@@ -27,7 +14,7 @@ def map_fires(psql_conn):
     import math
     from urllib.error import URLError
 
-    st.markdown(f"# {list(page_names_to_funcs.keys())[2]}")
+    st.markdown(f"# {list(page_names_to_funcs.keys())[1]}")
     st.write(
         """
         This demo shows how to use
@@ -139,8 +126,6 @@ def facttable_page(psql_conn):
     startdate = st.date_input(label="Enter start_date",value=df["burncostdate"].min(),min_value=df["burncostdate"].min(),max_value=df["burncostdate"].max())
     enddate = st.date_input(label="Enter end_date",value=df["burncostdate"].max(),min_value=df["burncostdate"].min(),max_value=df["burncostdate"].max())
 
-    time_dimension = st.selectbox("Choose time dimension",["Year","Month","Date","Year-Month"])
-
     if not provinces:
         st.error("Please select at least one province.")
     else:
@@ -158,6 +143,9 @@ def facttable_page(psql_conn):
 
         groups = ["fireprovinceshort"]
 
+        st.markdown("## Aggregates")
+        time_dimension = st.selectbox("Choose time dimension",["Year","Month","Date","Year-Month"])
+
         if time_dimension == "Month":
             months = pd.to_datetime(view["burncostdate"],infer_datetime_format=True,errors="raise").dt.month.rename("month")
             groups.append(months)
@@ -174,7 +162,7 @@ def facttable_page(psql_conn):
             groups.append(years)
 
         agg = view.groupby(groups).agg(
-            fires=pd.NamedAgg(column="burnincidentid", aggfunc="count"),
+            fire_incidents=pd.NamedAgg(column="burnincidentid", aggfunc="count"),
             avg_hectares_burnt=pd.NamedAgg(column="hectaresburnt", aggfunc="mean"),
             total_hectares_burnt=pd.NamedAgg(column="hectaresburnt", aggfunc="sum"),
             avg_temp=pd.NamedAgg(column="averagetemperature", aggfunc="mean"),
@@ -182,7 +170,6 @@ def facttable_page(psql_conn):
             total_cost=pd.NamedAgg(column="cost", aggfunc="sum"),
         )
 
-        st.markdown("## Aggregates")
 
         st.write("See top/bottom X%")
         orderby = st.selectbox("Order entries by:",list(agg.columns))
