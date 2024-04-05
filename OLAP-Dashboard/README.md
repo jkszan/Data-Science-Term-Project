@@ -94,7 +94,7 @@ year | province |    hectaresburnt    |        cost
 
 TODO: This query is functionally speaking only one if condition (if hectares burnt > 200), needs to be replaced
 
-5. Dice Query 2: Getting all FACTs where there is greater than 200 hectares burnt?
+5. Dice Query 2: Getting all FACTs where there is greater than 200 hectares burnt
   
     ```min_cost = SELECT MIN(cost) from dailyburncost WHERE hectaresburnt > 200.0;```
   
@@ -114,7 +114,7 @@ TODO: This query is functionally speaking only one if condition (if hectares bur
       5407 | 2021-07-26   |          5 |         246452 | ON                |               20.8 |                     |                  |  4.021553808366667 | 23492.970143169907
 ```
 
-6. Comb Query 1: Getting average cost and hectares burned from FACT Table for fires that have burned more than 10 hectares by province (TODO: Is this just Iceberg again?)
+1. Comb Query 1: Getting average cost and hectares burned from FACT Table for fires that have burned more than 10 hectares grouped by province
 
     ```SELECT fireprovinceshort, AVG(cost) as cost,AVG(hectaresburnt) as avg_burnt, COUNT(burnincidentid) as fires FROM dailyburncost WHERE hectaresburnt > 10 GROUP BY fireprovinceshort```
 
@@ -131,7 +131,7 @@ TODO: This query is functionally speaking only one if condition (if hectares bur
  BC                |  302068.7708467641 | 111.05944081250921 |  9818
 ```
 
-7. Comb Query 2: Getting average Temp, Hectares Burnt, and Total cost from fires burning more than 10 hectares by year. (TODO: Iceburg 3 - Electrostatic Pine Tree?)
+7. Comb Query 2: Getting average Temp, Hectares Burnt, and Total cost from fires burning more than 10 hectares by year.
 
     ```SELECT EXTRACT(YEAR FROM burncostdate) as year, AVG (averagetemperature) as avg_temp, AVG(hectaresburnt) as avg_burnt, SUM(cost) as total_cost FROM dailyburncost WHERE hectaresburnt > 10 GROUP BY year ORDER BY year;```
 
@@ -152,18 +152,9 @@ TODO: This query is functionally speaking only one if condition (if hectares bur
  1997 | 14.141843971631243 | 52.883526889490824 |  17446497.18393898
 ```
 
-8. Comb Query 3:
+8. Comb Query 3: Getting FACT table entries from August.
 
     ```SELECT burncostdate,fireprovinceshort,averagetemperature,hectaresburnt,cost FROM dailyburncost WHERE averagetemperature IS NOT NULL AND EXTRACT(MONTH FROM burncostdate)=8 ORDER BY averagetemperature DESC;```
-
-  
-9. Comb Query 4: Getting fires in June, July, or August? But seemingly only August?
-
-
-    ```SELECT EXTRACT(YEAR FROM burncostdate) as year, AVG(averagetemperature) as avg_temp,SUM(hectaresburnt) as total_hectare_burnt,SUM(cost) as cost FROM (SELECT * FROM dailyburncost WHERE EXTRACT(MONTH FROM burncostdate)=6 OR EXTRACT(MONTH FROM burncostdate)=7 OR EXTRACT(MONTH FROM burncostdate)=8 ) WHERE fireprovinceshort='ON' GROUP BY year ORDER BY year ASC;```
-
-TODO: What is this?
-
 
 ```
  burncostdate | fireprovinceshort | averagetemperature |     hectaresburnt      |          cost
@@ -182,7 +173,34 @@ TODO: What is this?
  2021-08-15   | BC                |                 30 |      957.8359991776316 |     3415803.6522676204
 ```
 
-10.  Iceberg Query: Getting the 10 weeks of the year with the most fires, as well as their average temperature and average costs
+  
+9. Comb Query 4: Getting fires in June, July, or August in Ontario by year
+
+
+    ```SELECT EXTRACT(YEAR FROM burncostdate) as year, AVG(averagetemperature) as avg_temp,SUM(hectaresburnt) as total_hectare_burnt,SUM(cost) as cost FROM (SELECT * FROM dailyburncost WHERE EXTRACT(MONTH FROM burncostdate)=6 OR EXTRACT(MONTH FROM burncostdate)=7 OR EXTRACT(MONTH FROM burncostdate)=8 ) WHERE fireprovinceshort='ON' GROUP BY year ORDER BY year ASC;```
+
+```
+ year |      avg_temp      | total_hectare_burnt |        cost
+------+--------------------+---------------------+--------------------
+ 1986 | 14.469951534733449 |  13564.149788102195 |  7070265.045356327
+ 1987 | 16.545919778699897 |   13227.67173394098 |  6894877.051119337
+ 1988 | 18.000817307692262 |  17475.794743917017 | 10530739.932696287
+ 1989 | 18.220064550833794 |  106844.98320244312 |  82501103.98634677
+ 1990 | 16.400829875518685 |    9200.85485524539 |  7994429.532258958
+ 1991 |  17.58764044943821 |   19651.12095414346 | 18315067.404853284
+ 1992 | 12.824260355029585 |  1637.9818507074642 | 1447734.6669142374
+ 1993 | 15.806329113924049 |   654.2675861598867 |  567685.0282180471
+ 1994 | 17.094249201277954 |  1252.5188646774718 |  1081697.797337804
+ 1995 | 18.146010844306755 |   137297.0886663584 | 121572654.79643449
+ 1996 | 15.859498480243149 |  36503.620479258956 | 35218385.763882056
+ 1997 | 15.334394904458597 |   910.0298040610726 |   983686.607303572
+ 1998 |  16.07062975027142 |  11813.211204389007 | 13448224.653155047
+ 1999 | 14.621813725490206 |  11751.537601831027 | 13791768.128413608
+ 2000 |  16.29876543209876 |  315.16228867761544 |  378041.6930960958
+ 2001 |  17.22814465408806 |   456.5877039496165 |  559509.3353134096
+```
+
+10.   Iceberg Query: Getting the 10 weeks of the year with the most fires, as well as their average temperature and average costs
     
       ```SELECT EXTRACT(WEEK FROM burncostdate) as week, AVG(averagetemperature) avg_temp, COUNT(burnincidentid) AS fires, AVG(cost) as avg_cost FROM dailyburncost GROUP BY week ORDER BY fires DESC LIMIT 10;```
 
@@ -202,7 +220,7 @@ TODO: What is this?
 (10 rows)
 ```
 
-11.  Windowing Query:
+11. Windowing Query: A ranking of months by most hectares burnt for each year
 
       ```SELECT EXTRACT(YEAR FROM burncostdate) as year, EXTRACT(MONTH FROM burncostdate) as month,AVG(averagetemperature) as avg_temp,SUM(hectaresburnt) as total_hectare_burnt,SUM(cost) as cost, RANK() OVER (PARTITION BY EXTRACT(YEAR FROM burncostdate) ORDER BY SUM(hectaresburnt) DESC) FROM dailyburncost GROUP BY GROUPING SETS ((year,month)) ORDER BY year,rank;```
 
@@ -223,11 +241,10 @@ year | month |       avg_temp       | total_hectare_burnt  |        cost        
  1987 |     4 |     8.95416666666667 |   34.191076191792334 |  15150.77679246737 |    5
 ```
 
-12.  Usage of Window Clause: 
+12.  Usage of Window Clause: A calculation of the percentage of hectares burnt in a 3 month moving average
 
       ```SELECT burnincidentid,EXTRACT(YEAR FROM burncostdate) as year,EXTRACT(MONTH FROM burncostdate) as month,hectaresburnt, hectaresburnt / SUM(hectaresburnt) OVER W AS fires_mov_avg FROM dailyburncost GROUP BY GROUPING SETS ((burnincidentid,year,month,hectaresburnt)) WINDOW W AS (PARTITION BY EXTRACT(YEAR FROM burncostdate) ORDER BY EXTRACT(MONTH FROM burncostdate) RANGE BETWEEN '1' PRECEDING AND '1' FOLLOWING)```
 
-TODO: Explain this one
 
 ```
  burnincidentid | year | month |     hectaresburnt      |     fires_mov_avg
