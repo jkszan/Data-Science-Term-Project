@@ -92,29 +92,30 @@ year | province |    hectaresburnt    |        cost
  1995 | BC       |  1483.4053860478775 | 1060775.9276190195
 ```
 
-TODO: This query is functionally speaking only one if condition (if hectares burnt > 200), needs to be replaced
 
-5. Dice Query 2: Getting all FACTs where there is greater than 200 hectares burnt
+5. Dice Query 2: Getting all FACTs where there is greater than 200 hectares burnt or average temp is greater than 20
   
-    ```min_cost = SELECT MIN(cost) from dailyburncost WHERE hectaresburnt > 200.0;```
-  
-    ```SELECT * FROM dailyburncost WHERE hectaresburnt>200.0 OR cost > {min_cost} ORDER BY hectaresburnt ASC;```
+    ```SELECT * FROM dailyburncost WHERE hectaresburnt>200.0 OR averagetemperature > 20 ORDER BY hectaresburnt ASC;```
 
 ```
- stationid | burncostdate | provinceid | burnincidentid | fireprovinceshort | averagetemperature | maxrelativehumidity | maxwindspeedgust |   hectaresburnt    |        cost
------------+--------------+------------+----------------+-------------------+--------------------+---------------------+------------------+--------------------+--------------------
-      5407 | 2021-07-28   |          5 |         246454 | ON                |                 19 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-10   |          5 |         246436 | ON                |               17.3 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-09   |          5 |         246435 | ON                |               15.5 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-08   |          5 |         246434 | ON                |               14.5 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-22   |          5 |         246448 | ON                |                 17 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-23   |          5 |         246449 | ON                |               17.8 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-24   |          5 |         246450 | ON                |               21.3 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-25   |          5 |         246451 | ON                |               21.8 |                     |                  |  4.021553808366667 | 23492.970143169907
-      5407 | 2021-07-26   |          5 |         246452 | ON                |               20.8 |                     |                  |  4.021553808366667 | 23492.970143169907
+ stationid | burncostdate | provinceid | burnincidentid | fireprovinceshort | averagetemperature | maxrelativehumidity | maxwindspeedgust |     hectaresburnt      |          cost
+-----------+--------------+------------+----------------+-------------------+--------------------+---------------------+------------------+------------------------+------------------------   
+      5270 | 1989-08-12   |          5 |          11765 | ON                |                 21 |                     |                  |  4.056214421547826e-10 | 3.1320344461000615e-07    
+      5270 | 1991-08-14   |          5 |          17702 | ON                |               24.3 |                     |                  |  5.411566833271462e-10 |  5.043641609479634e-07    
+      5270 | 1991-08-15   |          5 |          17703 | ON                |               21.8 |                     |                  |  5.411566833271462e-10 |  5.043641609479634e-07    
+      5270 | 1989-08-10   |          5 |          10774 | ON                |               20.3 |                     |                  |   5.47502206798122e-10 |  4.227576732378862e-07    
+      5270 | 1991-08-15   |          5 |          17673 | ON                |               21.8 |                     |                  |  6.303649714648648e-10 |  5.875072963511063e-07    
+      5270 | 1991-08-14   |          5 |          17457 | ON                |               24.3 |                     |                  | 1.0848100826511627e-09 | 1.0110552894964094e-06    
+      5270 | 1991-08-15   |          5 |          17458 | ON                |               21.8 |                     |                  | 1.0848100826511627e-09 | 1.0110552894964094e-06    
+      5270 | 1991-08-15   |          5 |          17671 | ON                |               21.8 |                     |                  | 1.3719094080176471e-09 | 1.2786351139881187e-06    
+      5270 | 1989-08-10   |          5 |          10933 | ON                |               20.3 |                     |                  |  9.928117241906976e-09 |  7.666065438105427e-06    
+      5270 | 1991-08-12   |          5 |          17683 | ON                |                 24 |                     |                  |  4.101284055708955e-08 | 3.8224432133944654e-05    
+      5270 | 1991-08-13   |          5 |          17684 | ON                |               24.3 |                     |                  |  4.101284055708955e-08 | 3.8224432133944654e-05    
+      5270 | 1991-08-14   |          5 |          17685 | ON                |               24.3 |                     |                  |  4.101284055708955e-08 | 3.8224432133944654e-05    
+      5099 | 2014-07-23   |          6 |         170074 | MB                |               20.1 |                     |                0 |  3.309258573192308e-06 |  0.0021374248008154285    
 ```
 
-1. Comb Query 1: Getting average cost and hectares burned from FACT Table for fires that have burned more than 10 hectares grouped by province
+6. Comb Query 1: Getting average cost and hectares burned from FACT Table for fires that have burned more than 10 hectares grouped by province (Rollup + Slice)
 
     ```SELECT fireprovinceshort, AVG(cost) as cost,AVG(hectaresburnt) as avg_burnt, COUNT(burnincidentid) as fires FROM dailyburncost WHERE hectaresburnt > 10 GROUP BY fireprovinceshort```
 
@@ -131,7 +132,7 @@ TODO: This query is functionally speaking only one if condition (if hectares bur
  BC                |  302068.7708467641 | 111.05944081250921 |  9818
 ```
 
-7. Comb Query 2: Getting average Temp, Hectares Burnt, and Total cost from fires burning more than 10 hectares by year.
+7. Comb Query 2: Getting average Temp, Hectares Burnt, and Total cost from fires burning more than 10 hectares by year. (Rollup + Slice)
 
     ```SELECT EXTRACT(YEAR FROM burncostdate) as year, AVG (averagetemperature) as avg_temp, AVG(hectaresburnt) as avg_burnt, SUM(cost) as total_cost FROM dailyburncost WHERE hectaresburnt > 10 GROUP BY year ORDER BY year;```
 
@@ -174,8 +175,7 @@ TODO: This query is functionally speaking only one if condition (if hectares bur
 ```
 
   
-9. Comb Query 4: Getting fires in June, July, or August in Ontario by year
-
+9. Comb Query 4: Getting fires in June, July, or August in Ontario by year (Slice + rollup)
 
     ```SELECT EXTRACT(YEAR FROM burncostdate) as year, AVG(averagetemperature) as avg_temp,SUM(hectaresburnt) as total_hectare_burnt,SUM(cost) as cost FROM (SELECT * FROM dailyburncost WHERE EXTRACT(MONTH FROM burncostdate)=6 OR EXTRACT(MONTH FROM burncostdate)=7 OR EXTRACT(MONTH FROM burncostdate)=8 ) WHERE fireprovinceshort='ON' GROUP BY year ORDER BY year ASC;```
 
