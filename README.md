@@ -1,6 +1,8 @@
 
 # Data Science Term Project
 
+## For OLAP and Dashboard see [OLAP-Dashboard/README.md](OLAP-Dashboard/README.md)
+
 ## Requirements
 - Python 3.8
 - Rust 1.71.0
