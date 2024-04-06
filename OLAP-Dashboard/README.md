@@ -153,25 +153,23 @@ year | province |    hectaresburnt    |        cost
  1997 | 14.141843971631243 | 52.883526889490824 |  17446497.18393898
 ```
 
-8. Comb Query 3: Getting FACT table entries from August.
+8. Comb Query 3: Compare provinces in term of average temperature and total cost and hecctares burnt looking only at the month of August.
 
-    ```SELECT burncostdate,fireprovinceshort,averagetemperature,hectaresburnt,cost FROM dailyburncost WHERE averagetemperature IS NOT NULL AND EXTRACT(MONTH FROM burncostdate)=8 ORDER BY averagetemperature DESC;```
+    ```SELECT fireprovinceshort, AVG(averagetemperature) as avgtemp ,SUM(hectaresburnt) as totalburnt,SUM(cost) as totalcost FROM dailyburncost \
+    WHERE EXTRACT(MONTH FROM burncostdate)=8 GROUP BY fireprovinceshort ORDER BY avgtemp DESC```
 
 ```
- burncostdate | fireprovinceshort | averagetemperature |     hectaresburnt      |          cost
---------------+-------------------+--------------------+------------------------+------------------------
- 2004-08-15   | BC                |                 31 |     1.9774237418978724 |     1997.4300525200683
- 2004-08-15   | BC                |                 31 |     16.551771700793104 |      16719.23195677037
- 2004-08-15   | BC                |                 31 |     5.5514422162635135 |      5607.608163413083
- 2004-08-15   | BC                |                 31 |     0.2594403792630952 |      262.0652313398161
- 2018-08-12   | MB                |               30.4 |     0.0075990262146666 |       6.86403339179921
- 2021-08-15   | BC                |               30.2 |       24.1973123749375 |      86291.67003154563
- 2021-08-15   | BC                |               30.2 |         18.66123901718 |      66549.10490465001
- 2021-08-15   | BC                |               30.2 |      56.00711424971014 |      199730.7530426733
- 2021-08-15   | BC                |               30.2 |     2.3543771399846154 |       8396.10334178245
- 2021-08-15   | BC                |               30.2 |       1205.67675666875 |      4299645.317590054
- 1998-08-06   | SK                |                 30 |     0.0241684494769072 |     3.2570188894415613
- 2021-08-15   | BC                |                 30 |      957.8359991776316 |     3415803.6522676204
+  fireprovinceshort    avgtemp        totalburnt      totalcost
+-------------------+--------------+----------------+------------------------
+                NS | 19.592157    |     53.080946  | 4.502069e+04
+                NB | 18.179186    |      2.906608  | 2.152975e+03
+                BC | 17.905035    | 611948.569143  | 1.612825e+09
+                MB | 16.695415    | 816247.783700  | 2.933066e+08
+                ON | 16.446630    | 227398.673711  | 5.800051e+08
+                SK | 16.287687    | 550868.924205  | 2.039902e+08
+                QC | 16.017258    | 255365.486559  | 1.109103e+08
+                AB | 15.742508    |  90858.083114  | 6.322530e+07
+                NL | 15.433447    |  12731.810064  | 1.434929e+07
 ```
 
   
