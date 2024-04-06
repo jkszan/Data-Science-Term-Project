@@ -1,7 +1,7 @@
 
 # Data Science Term Project
 
-## For OLAP and Dashboard see [OLAP-Dashboard/README.md](OLAP-Dashboard/README.md)
+## For OLAP and Dashboard see [OLAP-Dashboard/README.md](OLAP-Dashboard/Group25_DashboardREADME.pdf)
 
 ## Requirements
 - Python 3.8
