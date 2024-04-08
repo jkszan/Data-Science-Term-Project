@@ -23,7 +23,7 @@ The one-class SVM's can be used in one of two ways, outlier detection and novelt
 In our case initial results from the one-class SVM model were not very promising. When working with finding positional outliers in our data, the one-class SVM model was not able to identify outliers effectively. Shown below the issue is that the estimator simply takes the centroid of the data and creates a hyper-sphere around it. When mapping back into the feature space this results in a large number of points seperated incorrectly by a simple distance from the mean rather than true outliers. I hypothesize that a One-Class SVM would be more effective in identifying outliers in a dataset with more features, more complex relationships between the features, and more noise. In this case the data is simply too simple for the one-class SVM to be effective, especially when looking at positional outliers.
 
 ### Poor Results of One-Class SVM Example
-![bad_one_class_svm_ontario](/src/machine_learning/images/oneclass_svm/0.3/ON.png)
+![bad_one_class_svm_ontario](./src/machine_learning/images/oneclass_svm/0.3/ON.png)
 
 
 ## DBSCAN
@@ -38,11 +38,11 @@ When including temperature in the clustering analysis we found that the DBSCAN a
 TODO: Add image of DBSCAN results
 
 ### Location Based Outliers Examples
-![BC Outliers](/src/machine_learning/images/dbscan/location/eps0.5/min20/BC.png)
-![SK Outliers](src/machine_learning/images/dbscan/location/eps1/min200/SK.png)
+![BC Outliers](./src/machine_learning/images/dbscan/location/eps0.5/min20/BC.png)
+![SK Outliers](./src/machine_learning/images/dbscan/location/eps1/min200/SK.png)
 
 ### Temperature and Location Based Outliers Examples
 In this case the input to the DBSCAN algorithm was normalized. The overlapping anomalies in the data were identified as anomalous due to their location. The visually identifiable outliers on the other hand were identified due to temperature and burn area, the two opposing categories mentioned above.
-![SK Temp Outliers](/src/machine_learning/images/dbscan_normalized/overall/eps1/min20/SK.png)
+![SK Temp Outliers](./src/machine_learning/images/dbscan_normalized/overall/eps1/min20/SK.png)
 
-![NL Temp Outliers](/src/machine_learning/images/dbscan_normalized/overall/eps1/min15/NL.png)
+![NL Temp Outliers](./src/machine_learning/images/dbscan_normalized/overall/eps1/min15/NL.png)
