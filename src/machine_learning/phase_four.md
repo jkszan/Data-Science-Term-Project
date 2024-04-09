@@ -1,6 +1,7 @@
 
 
 # DS Term Project: Phase Four
+Source for phase 4 is found in /src/machine_learning/.
 
 ## Introduction
 Due to the nature of our dataset there is no appropriate supervised learning task to complete so under the guidance of our TA we opted to complete part C instead of part B. We perform analysis of our data to identify outliers in our data. Beginning with the suggested one-class SVM model, we then move on to other clustering algorithms to try and better identify outliers in our data. The vast majority of the data we inspected for outliers was by province simply due to the massive size of the data. Inspecting by province allowed us to better understand the data and identify outliers more effectively.
@@ -36,11 +37,11 @@ Investigating the actual data we found that the outliers identified by the DBSCA
 When including temperature in the clustering analysis we found that the DBSCAN algorithm was able to identify outliers across provinces that occured in likely locations but were not typical in other ways, such as a fire when the temperature is near freezing. Continuing to add variables when including the burn area size DBSCAN identified more outliers. Specifically, in Nova Scotia (as well as other provinces) we were able to identify a number of fires that fell into one of two categories, out of season fires, and very small in season fires. Both of these categories are outliers. The former intuitively makes sense as fires are not expected to occur in the winter, and if they are, they are expected to naturally be very small. The latter also makes sense as during hot dry seasons fires are expected to be able to grow to a certain minimum size very quickly before being addressed. Nova Scotia was picked as an example for the latter category as it provides a good example of how a smaller province can address fires much more quickly and effectively than a larger province like Alberta where it may be several days before a fire can be addressed.
 
 ### Location Based Outliers Examples
+![ON Outliers](./images/dbscan/location/eps0.5/min20/ON.png)
 ![BC Outliers](./images/dbscan/location/eps0.5/min20/BC.png)
 ![SK Outliers](./images/dbscan/location/eps1/min200/SK.png)
 
 ### Temperature and Location Based Outliers Examples
 In this case the input to the DBSCAN algorithm was normalized. The overlapping anomalies in the data were identified as anomalous due to their location. The visually identifiable outliers on the other hand were identified due to temperature and burn area, the two opposing categories mentioned above.
 ![SK Temp Outliers](./images/dbscan_normalized/overall/eps1/min20/SK.png)
-
 ![NL Temp Outliers](./images/dbscan_normalized/overall/eps1/min15/NL.png)
