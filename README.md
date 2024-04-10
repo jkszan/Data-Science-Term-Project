@@ -3,6 +3,8 @@
 
 ## For OLAP and Dashboard see [OLAP-Dashboard/README.md](OLAP-Dashboard/Group25_DashboardREADME.pdf)
 
+## For Data Mining and outlier detection see [src/machine_learning/phase_four.md](src/machine_learning/phase_four.md)
+
 ## Requirements
 - Python 3.8
 - Rust 1.71.0

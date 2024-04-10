@@ -141,6 +141,31 @@ def facttable_page(psql_conn):
         desc = st.toggle(label="descending",value=True)
         st.write(view.set_index("burnincidentid").sort_values(by=[orderby],ascending=not desc).head(percentage_rows))
 
+
+        for col in ["averagetemperature","maxrelativehumidity","hectaresburnt"]:
+            if col == "hectaresburnt":
+                chart = (
+                    alt.Chart(view.dropna(subset=[col]))
+                    .mark_bar()
+                    .encode(
+                        x=alt.X(col,title=col,bin=True),
+                        y=alt.Y("count()").scale(type="log"),
+                        color="fireprovinceshort",
+                    )
+                )
+            else:
+                chart = (
+                    alt.Chart(view.dropna(subset=[col]))
+                    .mark_boxplot(extent="min-max")
+                    .encode(
+                        x=alt.X(col,title=col),
+                        y="fireprovinceshort",
+                        color="fireprovinceshort",
+                    )
+                )
+
+            st.altair_chart(chart, use_container_width=True)
+
         groups = ["fireprovinceshort"]
 
         st.markdown("## Aggregates")
@@ -181,6 +206,7 @@ def facttable_page(psql_conn):
 
         groups = ["fireprovinceshort"]
 
+
         if time_dimension == "Month" or time_dimension == "Year-Month":
             groups.append(view["burncostdate"].to_numpy().astype('datetime64[M]'))
         elif time_dimension == "Date":
@@ -211,6 +237,7 @@ def facttable_page(psql_conn):
                 )
             )
             st.altair_chart(chart, use_container_width=True)
+
 
 
 if __name__ == "__main__":

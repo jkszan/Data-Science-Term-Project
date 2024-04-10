@@ -14,7 +14,26 @@ By and large the data was already in a format that was ready for analysis after 
 NOTE: We opted to perform analysis by and large by province as wildfire characteristics vary greatly by province. For example, Alberta has a much larger area and more wildfires than Nova Scotia. As such we opted to perform analysis by province to better understand the data and identify outliers more effectively, reducing the noise and false positives in our analysis. This is also part of the reason that wildfire management is done provinially in Canada, as the characteristics of wildfires vary greatly by province.
 
 ## EDA
-We ran some simple Exploratory Data Analysis to better understand the data we were working with. We looked at the distribution of the data and the relationships between the features. We found that the data was very simple and did not have many complex relationships between the features. Spefically we investigated PhiK correlation heatmaps to identify any relationships between the features. This method uses Pearson correlation to identify how closely variables are related. There were no strong relationships between the features in our data. Further analysis using regression based methods would likely be more useful but are out of scope.
+We ran some simple Exploratory Data Analysis to better understand the data we were working with. We looked at the distribution of the data and the relationships between the features. 
+
+When it comes to distribution of data we could utilize part of the infrastructure 
+of the Dashboard created in the phase 3 and look at boxplots of different aspects of the data. We already knew from the graph below that the report rate of different years for fires may be the cause of batch-reporting which contribute sto outlier fires of much larger scales than the majority:
+
+![](./images/EDA/graph_fires.png)
+
+Looking at two more apt dimensions to investigate are average temperature of fires, humidity and hectares burnt for fires.
+
+![](./images/EDA/box_avgtemp.png)
+
+![](./images/EDA/box_humid.png)
+
+![](./images/EDA/hist_hect.png)
+
+Note specifically the log-scaling of the last graph. This showed the suspected large distribution of data which makes outlier detection something which should be very fruitful for this data collection. Provincial differences are also wide which will prove important for the future analysis.
+
+In terms of correlations and relations between dimensions we found that, sadly, the data was very simple and did not have many complex relationships between the features. Spefically we investigated PhiK correlation heatmaps to identify any relationships between the features. This method uses Pearson correlation to identify how closely variables are related. There were no strong relationships between the features in our data as seen in the picture below. Further analysis using regression based methods would likely be more useful but are out of scope.
+
+![](./images/phik/ON_corr.png)
 
 PhiK correlation report can be found here: [PhiK Correlation Report](./images/phik/)
 
